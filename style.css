@@ -1,0 +1,422 @@
+/* === ローカルフォントの読み込み === */
+@font-face {
+  /* ブラウザがこのフォントを認識するための名前を決めます（任意） */
+  font-family: 'Komorebi Gothic'; 
+  
+  /* フォントファイルの場所を指定します */
+  /* style.cssから見て、fontsフォルダの中のファイルを指定 */
+  src: url('./fonts/komorebi-gothic.ttf') format('truetype');
+  
+  /* フォントの太さを指定します */
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* === Google Fontsからフォントを読み込み (Noto Sans JPのみ) === */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+
+/* === カラーとフォントの定義 === */
+:root {
+  --main-purple: #76499F; 
+  --light-purple: #E7CBFF; 
+  --status-green: #4AC04E; 
+  --red: #d90000; 
+  --dark-text: #333333; 
+  --light-gray-bg: #f4f4f4; 
+  --white-bg: #ffffff; 
+  --border-color: #dddddd; 
+  --button-hover-light: #f0f0f0; 
+  --yellow-highlight: #fff200; 
+  
+  /* ここのフォント名は @font-face で指定した名前に合わせます */
+  --font-title: 'Komorebi Gothic', sans-serif; 
+  --font-body: 'Noto Sans JP', sans-serif; 
+}
+
+/* === 基本設定 === */
+body { 
+  font-family: var(--font-body);
+  margin: 0; 
+  background-color: var(--white-bg); /* ★ 背景を白に変更 ★ */
+  padding: 0 0 50px 0; 
+  color: var(--dark-text);
+  line-height: 1.6;
+}
+.hidden { display: none !important; }
+
+/* === ヘッダー === */
+/* === ヘッダー === */
+header { 
+  /* background-color: var(--main-purple); */ /* ★ 背景色指定を削除 ★ */
+  color: var(--dark-text); /* ★ 文字色を基本テキスト色に変更 ★ */
+  padding: 20px; 
+  text-align: center; 
+  /* ★ 影を追加して区切りを分かりやすく (任意) ★ */
+  border-bottom: 1px solid var(--border-color); 
+  /* box-shadow: 0 1px 3px rgba(0,0,0,0.1); */ /* または影 */
+}
+
+/* ヘッダー内の H1 の色も変更が必要 */
+header h1 { 
+  margin: 0; 
+  font-family: var(--font-title);
+  font-size: 1.8em; 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  color: #000000 /* ★ H1の色を紫に変更 (背景が白なので) ★ */
+}
+
+/* ヘッダー内の説明文の色も変更が必要 */
+header .description { /* ヘッダー内に説明文がある場合 (現在は外) */
+    color: var(--text-secondary); /* グレーに変更 */
+}
+/* ヘッダー内のハイライトは文字色に合わせる */
+header .highlight { 
+  color: var(--main-purple); /* 紫に変更 */
+  font-weight: bold; 
+}
+.description, .thanks-description { 
+  font-size: 14px; 
+  line-height: 1.6; 
+  max-width: 700px; 
+  margin: 15px auto; 
+  text-align: left; 
+  padding: 0 15px; 
+}
+.highlight { 
+  color: var(--yellow-highlight); 
+  font-weight: bold; 
+}
+
+/* === メインコンテンツ === */
+main { 
+  max-width: 700px; 
+  margin: 20px auto; 
+  padding: 0 10px; 
+}
+#loading-message { text-align: center; padding: 20px; }
+
+/* === 部門セクション === */
+.department-section { 
+  background-color: var(--white-bg); 
+  border-radius: 8px; 
+  margin-bottom: 20px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08); 
+  padding: 20px; 
+}
+/* === 部門セクション === */
+/* ... (他のスタイルは省略) ... */
+.department-header h2 { 
+  margin: 0 0 15px 0; 
+  padding-bottom: 10px; 
+  border-bottom: 2px solid var(--main-purple); 
+  color: var(--main-purple); 
+  font-size: 20px; 
+  font-family: var(--font-body);
+  font-weight: bold;
+  text-align: center; /* ★ 中央揃えを追加 ★ */
+}
+
+/* === 選択ボタン === */
+.open-modal-btn { 
+  display: block; 
+  width: 100%; 
+  padding: 15px; 
+  font-size: 16px; 
+  font-weight: bold; 
+  color: var(--main-purple); 
+  background-color: var(--light-purple); 
+  border: 1px dashed var(--main-purple); 
+  border-radius: 8px; 
+  cursor: pointer; 
+  text-align: left; 
+  transition: background-color 0.2s, color 0.2s; 
+  overflow: hidden; /* ★ ボタン内のテキストも省略表示 */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.open-modal-btn:hover { 
+  background-color: #d8b8ff; 
+}
+.open-modal-btn.selected { 
+  background-color: var(--main-purple); 
+  color: white; 
+  border-style: solid; 
+  font-weight: normal; 
+}
+
+/* === モーダルウィンドウ === */
+#modal-overlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background-color: rgba(0, 0, 0, 0.65); 
+  display: flex; justify-content: center; align-items: center; z-index: 1000; 
+}
+#modal-content { 
+  background-color: var(--white-bg); width: 90%; max-width: 600px; border-radius: 8px; 
+  display: flex; flex-direction: column; max-height: 90vh; 
+  box-shadow: 0 5px 15px rgba(0,0,0,0.25); 
+  overflow: hidden;
+}
+#modal-title { 
+  font-size: 20px; padding: 18px 20px; margin: 0; 
+  border-bottom: 1px solid var(--border-color); 
+  color: var(--main-purple); 
+  font-weight: bold;
+}
+#modal-nominee-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
+.modal-buttons { 
+  display: flex; justify-content: space-between; padding: 15px 20px; 
+  border-top: 1px solid var(--border-color); 
+  background-color: #f8f8f8; 
+}
+.modal-buttons button { padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border-color); } 
+#modal-back-btn { background-color: #fff; color: var(--dark-text); }
+#modal-back-btn:hover { background-color: var(--button-hover-light); }
+#modal-confirm-btn { 
+  background-color: var(--main-purple); 
+  border-color: var(--main-purple); 
+  color: white; 
+}
+#modal-confirm-btn:hover { background-color: #613d85; border-color: #613d85; } 
+
+/* === 企画選択リスト === */
+.nominee-item { 
+  display: block; margin: 10px; border: 1px solid var(--border-color); 
+  border-radius: 8px; cursor: pointer; 
+}
+.nominee-item input[type="radio"] { display: none; }
+.nominee-label { display: flex; align-items: center; padding: 15px; }
+.nominee-item input[type="radio"]:checked + .nominee-label { 
+  background-color: var(--light-purple); 
+  border-color: var(--main-purple); 
+}
+label.nominee-item:has(input[type="radio"]:checked) {
+  border-width: 2px; 
+  border-color: var(--main-purple);
+  padding: 0; 
+}
+label.nominee-item:has(input[type="radio"]:checked) .nominee-label{
+  padding: 14px; 
+}
+
+.nominee-icon { 
+  width: 50px; height: 50px; border-radius: 50%; 
+  margin-right: 15px; background-color: #eee; background-size: cover; 
+  background-position: center; flex-shrink: 0; 
+}
+.nominee-details { flex-grow: 1; }
+.plan-name { font-size: 16px; font-weight: bold; }
+.organization-name { font-size: 14px; color: #666; margin-top: 4px; }
+.nominee-list-gp { padding: 10px 0; }
+.nominee-list-gp .organization-name { display: none; } 
+
+/* === 最終投票ボタン === */
+#final-vote-btn-container { text-align: center; margin-top: 30px; }
+/* === 最終投票ボタン === */
+/* ... (他のスタイルは省略) ... */
+#final-vote-btn { 
+  padding: 15px 40px; 
+  font-size: 18px; 
+  font-weight: bold; 
+  color: white; 
+  background-color: var(--main-purple); /* ★ 紫色に変更 ★ */
+  border: none; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+#final-vote-btn:hover { 
+  background-color: #613d85; /* ★ 少し暗い紫に変更 ★ */
+} 
+#final-vote-btn:disabled { 
+  background-color: #ccc; 
+  cursor: not-allowed; 
+}
+
+
+/* === カスタムダイアログ === */
+#custom-confirm-overlay, #custom-alert-overlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background-color: rgba(0, 0, 0, 0.6); 
+  display: flex; justify-content: center; align-items: center; z-index: 2000; 
+}
+#custom-confirm-box, #custom-alert-box { 
+  background-color: var(--white-bg); width: 90%; max-width: 400px; border-radius: 8px; 
+  box-shadow: 0 5px 15px rgba(0,0,0,0.25); text-align: center; overflow: hidden; 
+}
+.confirm-title { 
+  font-size: 18px; font-weight: bold; padding: 20px 20px 10px; margin: 0; 
+  color: var(--main-purple); 
+}
+.confirm-message, #custom-alert-message { 
+  font-size: 16px; line-height: 1.6; padding: 10px 20px 20px; margin: 0; 
+  white-space: pre-wrap; 
+}
+.confirm-buttons, .alert-buttons { display: flex; border-top: 1px solid var(--border-color); } 
+.confirm-buttons button, .alert-buttons button { 
+  flex: 1; padding: 15px; font-size: 16px; border: none; 
+  background-color: transparent; cursor: pointer; 
+}
+.confirm-buttons button:first-child { border-right: 1px solid var(--border-color); color: #555; } 
+#confirm-ok-btn, #alert-ok-btn { 
+  color: var(--main-purple); 
+  font-weight: bold; 
+}
+
+/* === サンクスページ === */
+.thanks-main { text-align: center; }
+.thanks-title-container { 
+  border-bottom: 2px solid var(--main-purple); 
+  padding-bottom: 10px; margin: 30px 0; 
+}
+.thanks-title-container h2 { 
+  font-size: 22px; color: var(--main-purple); margin: 0; 
+  font-family: var(--font-body); 
+  font-weight: bold;
+}
+
+/* === ガラガラ抽選券 === */
+.lottery-ticket { 
+  width: 90%; max-width: 350px; height: 120px; margin: 30px auto; 
+  background-color: #f8f5fc; 
+  border: 2px dashed var(--main-purple); 
+  display: flex; cursor: pointer; position: relative; 
+  transition: transform 0.2s, box-shadow 0.2s; 
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08); 
+}
+.lottery-ticket:hover { transform: scale(1.02); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+.ticket-body { 
+  flex-grow: 1; display: flex; flex-direction: column; 
+  justify-content: center; align-items: center; 
+  border-right: 2px dashed var(--main-purple); padding: 10px; 
+}
+.ticket-title { font-size: 24px; font-weight: bold; color: var(--main-purple); margin: 0; } 
+.ticket-status { 
+  font-size: 16px; font-weight: bold; 
+  color: var(--status-green); 
+  margin: 5px 0 0 0; 
+}
+.ticket-stub { 
+  width: 60px; flex-shrink: 0; display: flex; justify-content: center; 
+  align-items: center; background-color: var(--light-purple); 
+}
+.ticket-stub-text { 
+  font-size: 16px; font-weight: bold; writing-mode: vertical-rl; 
+  letter-spacing: 2px; color: var(--main-purple); 
+}
+.ticket-note { font-size: 12px; color: #555; margin-top: 10px; line-height: 1.5; }
+/* 使用済みスタイル */
+.lottery-ticket.used { 
+  background-color: #e9ecef; border-color: #adb5bd; cursor: not-allowed; 
+}
+.lottery-ticket.used:hover { transform: none; box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+.lottery-ticket.used .ticket-body { border-right-color: #adb5bd; }
+.lottery-ticket.used .ticket-title { color: #6c757d; }
+.lottery-ticket.used .ticket-status { color: var(--red); } 
+.lottery-ticket.used .ticket-stub { background-color: #ced4da; }
+.lottery-ticket.used .ticket-stub-text { color: #6c757d; }
+
+/* === 管理者ページ === */
+#admin-page { 
+  background-color: var(--white-bg); max-width: 700px; margin: 20px auto; 
+  padding: 25px; 
+  border: 1px solid var(--border-color); 
+  border-radius: 8px; line-height: 1.6; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+#admin-page h2 { 
+  color: var(--main-purple); 
+  border-bottom: 2px solid var(--main-purple); 
+  padding-bottom: 10px; margin-bottom: 20px; 
+  font-family: var(--font-body); font-weight: bold;
+  font-size: 1.5em; 
+}
+#admin-page h3 { 
+  margin-top: 25px; 
+  border-left: 4px solid var(--main-purple); 
+  padding-left: 10px; 
+  font-family: var(--font-body); font-weight: bold;
+  font-size: 1.2em; 
+  margin-bottom: 10px; 
+}
+#admin-page button { 
+  padding: 8px 15px; font-size: 14px; border: 1px solid var(--border-color); 
+  border-radius: 5px; cursor: pointer; margin: 5px; vertical-align: middle; 
+  background-color: #fff; 
+  transition: background-color 0.2s;
+}
+#admin-page button:hover {
+  background-color: var(--button-hover-light);
+}
+#admin-page input[type="password"] { 
+  padding: 8px; font-size: 14px; border: 1px solid var(--border-color); 
+  border-radius: 5px; vertical-align: middle; 
+}
+#admin-reset-button { 
+  background-color: var(--red); color: white; border-color: var(--red); 
+  font-weight: bold; 
+}
+#admin-reset-button:hover { background-color: #b30000; border-color: #b30000; }
+#admin-reset-local-button { 
+  background-color: #ffc107; color: var(--dark-text); border-color: #ffc107; 
+  font-weight: bold; 
+}
+#admin-reset-local-button:hover { background-color: #e0a800; border-color: #e0a800; }
+#admin-back-button { background-color: #eee; margin-top: 20px; }
+#admin-back-button:hover { background-color: #ddd; }
+
+#debug-status { font-weight: bold; }
+code { 
+  background-color: #eee; padding: 2px 5px; border-radius: 3px; 
+  font-family: monospace; 
+}
+
+/* === スマートフォン向けの表示調整 === */
+@media (max-width: 600px) {
+  body { padding: 15px; padding-bottom: 80px; } 
+  header h1 { font-size: 1.6em; } /* ★ スマホで1行表示 */
+  .description, .thanks-description { font-size: 13px; padding: 0 10px; }
+  main { max-width: 100%; padding: 0 5px; } 
+  
+  .department-section { padding: 15px; }
+  .department-header h2 { font-size: 18px; }
+  .open-modal-btn { padding: 12px 15px; font-size: 15px; }
+  
+  #modal-content { max-width: 95%; } 
+  #modal-title { font-size: 18px; padding: 15px 18px; }
+  #modal-nominee-list { padding: 8px; }
+  .nominee-label { padding: 12px; }
+  .nominee-icon { width: 40px; height: 40px; margin-right: 12px; }
+  .plan-name { font-size: 15px; }
+  .organization-name { font-size: 13px; }
+  .modal-buttons { padding: 12px 18px; }
+  .modal-buttons button { padding: 8px 18px; font-size: 15px; }
+
+  #final-vote-btn { font-size: 16px; padding: 14px 30px; }
+  
+  .thanks-title-container h2 { font-size: 20px; }
+  
+  .lottery-ticket { max-width: 90%; height: auto; } 
+  .ticket-title { font-size: 20px; }
+  .ticket-status { font-size: 14px; }
+  .ticket-stub { width: 50px; }
+  .ticket-stub-text { font-size: 14px; }
+
+  #admin-page { padding: 15px; }
+  #admin-page h2 { font-size: 1.6em; }
+  #admin-page h3 { font-size: 1.1em; }
+  #admin-page button, #admin-page input[type="password"] { font-size: 13px; padding: 7px 12px; }
+}
+
+/* さらに小さい画面 */
+@media (max-width: 450px) {
+  header h1 { font-size: 1.4em; } /* さらに小さく */
+  .description, .thanks-description { font-size: 12px; }
+  .open-modal-btn { font-size: 14px; }
+  .plan-name { font-size: 14px; }
+  .organization-name { font-size: 12px; }
+  #final-vote-btn { font-size: 15px; }
+}
+
+

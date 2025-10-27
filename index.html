@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工大祭グランプリ</title>
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <div id="selection-contents">
+    <header>
+      <h1>工大祭グランプリ２０２５</h1>
+      <p class="description">
+        工大祭グランプリ2025とは、ご来場いただいた方々に気に入った企画に投票していただき、工大祭2025の人気企画を決める一大イベントです。<br>
+        投票していただいた方には附属図書館付近のテントにて<span class="highlight">ハズレなしのガラガラ抽選</span>にご参加いただけます。<br>
+        結果発表は工大祭2日目(11/3(月・祝))16:40から野外ステージにて行います。こちらも是非ご覧ください。
+      </p>
+    </header>
+    <main>
+      <form id="nomination-form">
+        <p id="loading-message">企画データを読み込み中です...</p>
+        
+        <section id="grand-prix-voting-section" class="department-section hidden">
+          <div class="department-header"><h2>ベストオブ工大祭</h2></div>
+          <div id="grand-prix-list" class="nominee-list-gp">
+          </div>
+        </section>
+
+        <div id="final-vote-btn-container" class="hidden">
+          <button type="button" id="final-vote-btn">この内容で投票を確定する</button>
+        </div>
+        
+      </form> 
+    </main>
+  </div>
+  
+  <div id="thank-you-message" class="hidden">
+    <header>
+      <h1>工大祭グランプリ２０２５</h1>
+    </header>
+    <main class="thanks-main">
+       <div class="thanks-title-container">
+        <h2>ご投票ありがとうございました！</h2>
+      </div>
+      <p class="thanks-description">
+        結果発表は工大祭2日目(11/3(月・祝))16:40から野外ステージにて行います。こちらも是非ご覧ください。<br><br>
+        また、投票していただいた方には附属図書館付近のテントにてハズレなしのガラガラ抽選にご参加いただけます。
+      </p>
+      
+      <div id="lottery-ticket" class="lottery-ticket">
+        <div class="ticket-body">
+          <p class="ticket-title">ガラガラ抽選券</p>
+          <p class="ticket-status">（未使用）</p>
+        </div>
+        <div class="ticket-stub">
+          </div>
+      </div>
+      <p class="ticket-note">
+        ※係員にこの画面を見せてください。<br>
+        ※係員の確認のもとで抽選券をクリックして「使用済み」にしてください。
+      </p>
+    </main>
+  </div>
+  
+  <div id="admin-page" class="hidden">
+    <h2>管理者設定パネル</h2>
+    <p>
+      以下のボタンを押すと、Google スプレッドシートに記録されている<strong style="color: red;">全投票データが消去されます</strong>。
+      <br>（注: 各ユーザーのブラウザに保存されている「投票済み」「抽選券使用済み」の状態はリセットされません）
+    </p>
+    <p style="color: red; font-weight: bold;">
+      ⚠ 実行する際は、必ず正しいトークンを入力してください！<br>
+      ⚠ 一度削除したデータは元に戻せません！
+    </p>
+    <div>
+        <label for="admin-token">リセットトークン: </label>
+        <input type="password" id="admin-token" size="15">
+        <button id="admin-reset-button">全投票データをリセット</button>
+    </div>
+    <hr style="margin: 20px 0;">
+    <h3>ブラウザ状態リセット（テスト用）</h3>
+    <p>
+      <strong style="color: blue;">⚠ このボタンは管理者自身のブラウザの状態のみをリセットします。</strong><br>
+      他のユーザーの「投票済み」「抽選券使用済み」の状態はリセットされません。<br>
+      テスト目的で、管理者自身のブラウザで再度投票や抽選券の動作を確認したい場合に使用してください。
+    </p>
+    <button id="admin-reset-local-button">このブラウザの投票/抽選券状態をリセット</button>
+    <hr style="margin: 20px 0;"> 
+    <h3>デバッグモード</h3>
+    <p>
+      URLの末尾に <code>?debug=on</code> を付けてアクセスすると、デバッグモードが有効になります。<br>
+      デバッグモード中は、「投票済み」「抽選券使用済み」のチェックが無効化され、何度でも投票や抽選券のテストができます。
+    </p>
+    <p id="debug-status">デバッグモード: 無効</p>
+    <button id="admin-back-button">投票ページへ戻る</button>
+  </div>
+  
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-content">
+      <h3 id="modal-title">部門名</h3>
+      <div id="modal-nominee-list">
+      </div>
+      <div class="modal-buttons">
+        <button type="button" id="modal-back-btn">戻る</button>
+        <button type="button" id="modal-confirm-btn">これで決定</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="custom-confirm-overlay" class="hidden">
+     <div id="custom-confirm-box">
+      <p class="confirm-title">投票の確認</p>
+      <p class="confirm-message">この内容で投票を確定します。<br>よろしいですか？</p>
+      <div class="confirm-buttons">
+        <button id="confirm-cancel-btn">キャンセル</button>
+        <button id="confirm-ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="custom-alert-overlay" class="hidden">
+    <div id="custom-alert-box">
+      <p id="custom-alert-message">警告メッセージがここに表示されます。</p>
+      <div class="alert-buttons">
+        <button id="alert-ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  </body>
+</html>
