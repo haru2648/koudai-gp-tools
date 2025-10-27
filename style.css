@@ -116,6 +116,19 @@ main {
   font-family: var(--font-body);
   font-weight: bold;
   text-align: center; /* ★ 中央揃えを追加 ★ */
+
+  /* --- ここから下がグラデーションの指定 --- */
+
+  /* 1. テキスト（文字）をグラデーションにする */
+  background-image: linear-gradient(to bottom, #9f2964, #7c3f84);
+  -webkit-background-clip: text; /* Safariなどブラウザ対応用 */
+  background-clip: text;
+  color: transparent; /* 元の文字色を透明にする */
+
+  /* 2. ボーダー（下線）をグラデーションにする */
+  border-bottom: 2px solid; /* ボーダーの太さを定義 */
+  border-image-source: linear-gradient(to right, #9f2964, #7c3f84);
+  border-image-slice: 1;
 }
 
 /* === 選択ボタン === */
