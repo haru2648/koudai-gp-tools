@@ -89,6 +89,15 @@ header .highlight {
   font-weight: bold; 
 }
 
+/* === ヘッダー区切り線のスタイル === */
+.header-separator {
+  display: block; /* imgをブロック要素として扱い、marginを効かせる */
+  width: 100%;    /* 親要素の幅いっぱいに広げる */
+  max-width: 700px; /* mainコンテンツの最大幅と合わせる */
+  margin: 20px auto; /* 上下に20pxの余白を設け、左右は自動で中央揃え */
+  height: auto;   /* 画像の縦横比を維持する */
+}
+
 /* === メインコンテンツ === */
 main { 
   max-width: 700px; 
