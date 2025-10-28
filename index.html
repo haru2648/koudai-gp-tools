@@ -19,25 +19,34 @@
     import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-functions.js";
     
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    
     // Your web app's Firebase configuration
     const firebaseConfig = {
-    apiKey: "AIzaSyA3ZZ_T7OGkJ4z2gA9wOjJCGRIwFCewbzQ",
-    authDomain: "koudaisai-gp-2025.firebaseapp.com",
-    projectId: "koudaisai-gp-2025",
-    storageBucket: "koudaisai-gp-2025.firebasestorage.app",
-    messagingSenderId: "821603922081",
-    appId: "1:821603922081:web:3697ea3356f6bcf689c0e0"
-  };
+      apiKey: "AIzaSyA3ZZ_T7OGkJ4z2gA9wOjJCGRIwFCewbzQ",
+      authDomain: "koudaisai-gp-2025.firebaseapp.com",
+      projectId: "koudaisai-gp-2025",
+      storageBucket: "koudaisai-gp-2025.firebasestorage.app",
+      messagingSenderId: "821603922081",
+      appId: "1:821603922081:web:3697ea3356f6bcf689c0e0"
+    };
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     
+    const firestore = getFirestore(app);
+
     // グローバルスコープに関数を公開して main.js から使えるようにする
     window.firebaseTools = {
       auth: getAuth(app),
       functions: getFunctions(app, 'asia-northeast1'), // 東京リージョンを指定
       httpsCallable: httpsCallable,
-      signInWithCustomToken: signInWithCustomToken
+      signInWithCustomToken: signInWithCustomToken,
+      
+      firestore: firestore,
+      doc: doc,
+      getDoc: getDoc,
+      setDoc: setDoc
     };
   </script>
   <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
