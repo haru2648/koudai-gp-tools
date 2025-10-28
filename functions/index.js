@@ -1,9 +1,9 @@
-// === 必要な道具を読み込む (v2対応版) ===
+// === 必要な道具を読み込む (v2 + secrets 対応版) ===
 const { onRequest } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
+const { defineSecret } = require("firebase-functions/params"); // ★ 秘密の金庫を使うための道具
 const admin = require("firebase-admin");
 const axios = require("axios");
-// const functions = require("firebase-functions"); // ← 不要になったので削除
 
 // Firebaseアプリを初期化
 admin.initializeApp();
@@ -11,8 +11,14 @@ admin.initializeApp();
 // 全ての関数のリージョンを東京に設定
 setGlobalOptions({ region: "asia-northeast1" });
 
+// ★★★ 使う秘密の情報をここで宣言 ★★★
+const lineChannelIdSecret = defineSecret("LINE_CHANNEL_ID");
+const lineChannelSecretSecret = defineSecret("LINE_CHANNEL_SECRET");
+const lineCallbackUrlSecret = defineSecret("LINE_CALLBACK_URL");
+
 // === ここからが「入国審査官」の本体 ===
-exports.lineLoginCallback = onRequest({ cors: true }, async (req, res) => {
+// ★★★ runWithを使って、どの秘密情報を使うかを関数に教える ★★★
+exports.lineLoginCallback = onRequest({ secrets: [lineChannelIdSecret, lineChannelSecretSecret, lineCallbackUrlSecret], cors: true }, async (req, res) => {
   try {
     // 1. ウェブサイトから送られてきた「通行証(code)」を取り出す
     const code = req.body.data.code;
@@ -22,20 +28,18 @@ exports.lineLoginCallback = onRequest({ cors: true }, async (req, res) => {
       return;
     }
 
-    // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-    // ★★★ ここが最重要修正点！ process.env を使って秘密情報を読み取る ★★★
-    // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-    const callbackUrl = process.env.LINE_CALLBACK_URL;
-    const channelId = process.env.LINE_CHANNEL_ID;
-    const channelSecret = process.env.LINE_CHANNEL_SECRET;
+    // ★★★ 金庫から値を取り出して使う ★★★
+    const callbackUrl = lineCallbackUrlSecret.value();
+    const channelId = lineChannelIdSecret.value();
+    const channelSecret = lineChannelSecretSecret.value();
 
     // 2. LINEに「通行証」を渡して、正式な「IDカード(id_token)」をもらう
     const tokenResponse = await axios.post("https://api.line.me/oauth2/v2.1/token", new URLSearchParams({
       grant_type: "authorization_code",
       code: code,
-      redirect_uri: callbackUrl,    // ★ 変更
-      client_id: channelId,         // ★ 変更
-      client_secret: channelSecret, // ★ 変更
+      redirect_uri: callbackUrl,
+      client_id: channelId,
+      client_secret: channelSecret,
     }));
 
     const idToken = tokenResponse.data.id_token;
@@ -43,7 +47,7 @@ exports.lineLoginCallback = onRequest({ cors: true }, async (req, res) => {
     // 3. もらった「IDカード」を検証し、LINEのユーザーIDを取り出す
     const verifyResponse = await axios.post("https://api.line.me/oauth2/v2.1/verify", new URLSearchParams({
       id_token: idToken,
-      client_id: channelId, // ★ 変更
+      client_id: channelId,
     }));
 
     const lineUserId = verifyResponse.data.sub;
