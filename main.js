@@ -67,17 +67,41 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('admin-page').classList.add('hidden');
     if(statusMessage) statusMessage.textContent = 'ログイン情報を確認しています...';
     
-    console.log('LINEから受け取った認証コード:', code);
-    alert('LINE認証成功！次のフェーズに進みます。\n認証コード: ' + code);
-    
-    // ★★★ 次のフェーズで、この下に関数を追加し、Firebaseに認証コードを送信します ★★★
+    // ★★★ ここから下が変更部分 ★★★
+  
+  // さっき作った「入国審査官(lineLoginCallback)」を呼び出す準備
+  const lineLoginCallback = window.firebaseTools.httpsCallable(window.firebaseTools.functions, 'lineLoginCallback');
+
+  // 「通行証(code)」を渡して、審査を依頼する
+  lineLoginCallback({ code: code })
+    .then(async (result) => {
+      // 審査官から「正式な身分証(token)」が返ってきた！
+      const firebaseToken = result.data.token;
+      
+      // その身分証を使って、Firebaseに正式にログインする
+      await window.firebaseTools.signInWithCustomToken(window.firebaseTools.auth, firebaseToken);
+      
+      console.log('Firebaseへのログインに成功しました！');
+      
+      // ★★★ ログイン成功！投票アプリ本体を初期化 ★★★
+      initializeVotingApp(); 
+    })
+    .catch((error) => {
+      // 何か問題があった場合
+      console.error("ログイン処理エラー:", error);
+      if(statusMessage) statusMessage.textContent = `エラーが発生しました: ${error.message}`;
+    });
   }
 
   /**
    * ★★★ ログイン成功後に呼び出す、投票アプリ本体の初期化関数 ★★★
    */
   function initializeVotingApp(){
-      // --- 関数定義 (DOMContentLoadedの内側) ---
+  // --- 関数定義 (DOMContentLoadedの内側) ---
+
+  // ログインページを非表示にし、投票ページを表示する
+  document.getElementById('login-container')?.classList.add('hidden');
+  document.getElementById('selection-contents').classList.remove('hidden');
 
   /**
    * カスタム警告を表示する関数 
@@ -378,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminPage = document.getElementById('admin-page');
     if(adminPage) adminPage.classList.remove('hidden');
     setupAdminPageListeners();
-    
+
   }
     
 });
