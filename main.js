@@ -3,7 +3,7 @@ const LINE_CHANNEL_ID = '2008379888'; // ★ LINEのチャネルIDに書き換�
 const CALLBACK_URL = 'https://koudai-gp-tools.pages.dev/';   // ★ CloudflareのURLに書き換える
 
 // ★ Google Apps ScriptのデプロイURL (「?action=...」の手前まで)
-const GAS_API_URL = 'https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec'; // ★ あなたのGASのURLに書き換える
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwVgH-JIdAYssgfqx5VrG7MKks652tEFmcHmJlfBRdkKVOasSKP0kkz0pwDDVYAxjba7g/exec'; // ★ あなたのGASのURLに書き換える
 
 // --- グローバル変数 ---
 let allNomineesData = {};
@@ -507,21 +507,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const customAlertOverlay = document.getElementById('custom-alert-overlay');
       if(alertOkBtn && customAlertOverlay) { alertOkBtn.addEventListener('click', () => customAlertOverlay.classList.add('hidden')); }
       
-      // 企画データ(JSON)の読み込み (変更なし)
-      try {
-        const response = await fetch(GAS_API_URL + '?action=get_nominees');
-        if (!response.ok) { throw new Error(`ネットワークエラー: ${response.statusText}`); }
-        allNomineesData = await response.json();
-        console.log('企画データを読み込みました:', allNomineesData);
-        if(!allNomineesData.mogiten || !allNomineesData.tenji || !allNomineesData.stage || !allNomineesData.academic) {
-          throw new Error('企画データが不足しています。GASの形式を確認してください。');
-        }
-        setupVotingPage();
-      } catch (error) {
-        console.error('企画データの読み込みエラー:', error);
-        const loadingMsg = document.getElementById('loading-message');
-        if (loadingMsg) { loadingMsg.textContent = `エラー: 企画データを読み込めませんでした。\n${error.message}`; }
-      }
+      // 企画データ(JSON)の読み込み (★ローカルのdata.jsonから読み込むように変更★)
+try {
+  // ★GASのURLからローカルの 'data.json' ファイルパスに変更
+  const response = await fetch('./data.json'); 
+  
+  if (!response.ok) { 
+    throw new Error(`ネットワークエラー: ${response.status} ${response.statusText}`); 
+  }
+  allNomineesData = await response.json();
+  console.log('ローカルのdata.jsonから企画データを読み込みました:', allNomineesData);
+  
+  // JSONの形式チェック (data.jsonの形式に合わせる)
+  if(!allNomineesData.mogiten || !allNomineesData.tenji || !allNomineesData.stage || !allNomineesData.academic) {
+    throw new Error('企画データ(data.json)の形式が正しくありません。(mogiten, tenji, stage, academicのキーが必要です)');
+  }
+  
+  // 読み込みが成功したら、投票ページ（部門ボタン）を生成
+  setupVotingPage();
+  
+} catch (error) {
+  console.error('企画データの読み込みエラー:', error);
+  const loadingMsg = document.getElementById('loading-message');
+  if (loadingMsg) { loadingMsg.textContent = `エラー: 企画データを読み込めませんでした。\n${error.message}`; }
+}
 
       // イベントリスナーの設定 (変更なし)
       setupModalListeners();
