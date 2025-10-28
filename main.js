@@ -1,3 +1,8 @@
+// ▼▼▼ この3行をファイルの先頭に追加 ▼▼▼
+const LINE_CHANNEL_ID = '2008379888'; // ★ LINEのチャネルIDに書き換える
+const CALLBACK_URL = 'https://koudai-gp-tools.pages.dev/';   // ★ CloudflareのURLに書き換える
+
+
 // --- グローバル変数 ---
 let allNomineesData = {};
 let currentDepartment = null;
@@ -5,52 +10,74 @@ const selections = { mogiten: null, tenji: null, stage: null, academic: null };
 
 // HTMLドキュメントがすべて読み込まれたら実行
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('ステップ11 ランダム修正版: HTMLの読み込み完了。');
 
-  // --- URLパラメータの取得 ---
+
+  // === メイン処理：ページの表示を振り分ける ===
   const params = new URLSearchParams(window.location.search);
-  const isDebugMode = params.get('debug') === 'on'; 
-  const isAdminMode = params.get('admin') === 'on'; 
+  const lineAuthCode = params.get('code'); // URLに 'code' はあるか？
+  const isAdminMode = params.get('admin') === 'on'; // URLに 'admin' はあるか？
 
-  // --- GAS API URL ---
-  const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwVgH-JIdAYssgfqx5VrG7MKks652tEFmcHmJlfBRdkKVOasSKP0kkz0pwDDVYAxjba7g/exec';
-
-  // --- DOM要素の取得 (DOMContentLoadedの内側) ---
-  const selectionContents = document.getElementById('selection-contents');
-  const thankYouMessage = document.getElementById('thank-you-message');
-  const modalOverlay = document.getElementById('modal-overlay');
-  const modalTitle = document.getElementById('modal-title');
-  const modalNomineeList = document.getElementById('modal-nominee-list');
-  const confirmBtn = document.getElementById('modal-confirm-btn');
-  const backBtn = document.getElementById('modal-back-btn');
-  const grandPrixSection = document.getElementById('grand-prix-voting-section');
-  const grandPrixList = document.getElementById('grand-prix-list');
-  const finalVoteBtnContainer = document.getElementById('final-vote-btn-container');
-  const finalVoteBtn = document.getElementById('final-vote-btn');
-  const customConfirmOverlay = document.getElementById('custom-confirm-overlay');
-  const confirmTitle = document.querySelector('#custom-confirm-box .confirm-title');
-  const confirmMessage = document.querySelector('#custom-confirm-box .confirm-message');
-  const confirmOkBtn = document.getElementById('confirm-ok-btn');
-  const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-  const customAlertOverlay = document.getElementById('custom-alert-overlay');
-  const customAlertMessage = document.getElementById('custom-alert-message');
-  const alertOkBtn = document.getElementById('alert-ok-btn');
-  const adminPage = document.getElementById('admin-page');
-  const adminResetButton = document.getElementById('admin-reset-button');
-  const adminTokenInput = document.getElementById('admin-token');
-  const debugStatus = document.getElementById('debug-status');
-  const adminBackButton = document.getElementById('admin-back-button');
-  
-  // 警告ダイアログのOKボタンリスナー
-  if(alertOkBtn && customAlertOverlay) { 
-    alertOkBtn.addEventListener('click', () => {
-      customAlertOverlay.classList.add('hidden'); 
-    }); 
+  if (lineAuthCode) {
+    // 【A】LINE認証から戻ってきた場合
+    handleLineCallback(lineAuthCode);
+  } else if (isAdminMode) {
+    // 【B】管理者モードでアクセスされた場合
+    initializeAdminPage();
   } else {
-    console.error("Alert OK button or overlay not found!"); 
+    // 【C】ユーザーが最初にアクセスした場合
+    // (将来的には、ここにFirebaseのログイン状態チェックが入る)
+    showLoginPage();
   }
 
-  // --- 関数定義 (DOMContentLoadedの内側) ---
+  // ==========================================================
+  // === 以下、役割ごとの関数定義 ==============================
+  // ==========================================================
+
+  /**
+   * 【C】ログインページを表示し、ボタンをセットアップする
+   */
+  function showLoginPage() {
+    // ログインURLを組み立て
+    const lineLoginUrl = `https://access.line.me/oauth2/v2.1/authorize?${new URLSearchParams({
+      response_type: 'code',
+      client_id: LINE_CHANNEL_ID,
+      redirect_uri: CALLBACK_URL,
+      state: '12345abcde', // CSRF対策。今は固定でOK
+      scope: 'profile openid',
+    }).toString()}`;
+
+    // ボタンにURLを設定
+    const loginButton = document.getElementById('line-login-button');
+    if (loginButton) {
+      loginButton.href = lineLoginUrl;
+    }
+  }
+
+  /**
+   * 【A】LINE認証から戻ってきたときの処理
+   */
+  function handleLineCallback(code) {
+    const loginContainer = document.getElementById('login-container');
+    const statusMessage = document.getElementById('login-status-message');
+    
+    // 画面を「処理中...」に切り替え
+    if(loginContainer) loginContainer.classList.remove('hidden');
+    document.getElementById('selection-contents').classList.add('hidden');
+    document.getElementById('thank-you-message').classList.add('hidden');
+    document.getElementById('admin-page').classList.add('hidden');
+    if(statusMessage) statusMessage.textContent = 'ログイン情報を確認しています...';
+    
+    console.log('LINEから受け取った認証コード:', code);
+    alert('LINE認証成功！次のフェーズに進みます。\n認証コード: ' + code);
+    
+    // ★★★ 次のフェーズで、この下に関数を追加し、Firebaseに認証コードを送信します ★★★
+  }
+
+  /**
+   * ★★★ ログイン成功後に呼び出す、投票アプリ本体の初期化関数 ★★★
+   */
+  function initializeVotingApp(){
+      // --- 関数定義 (DOMContentLoadedの内側) ---
 
   /**
    * カスタム警告を表示する関数 
@@ -338,49 +365,20 @@ document.addEventListener('DOMContentLoaded', () => {
       adminBackButton.addEventListener('click', () => { window.location.href = './'; });
     }
   }
+  }
 
 
-  // --- 処理の開始 ---
-  
-  // --- 画面表示の振り分け ---
-  if (isAdminMode) {
-    console.log('ステップ11: 管理者モードで起動します。');
-    if(selectionContents) selectionContents.classList.add('hidden');
-    if(thankYouMessage) thankYouMessage.classList.add('hidden');
+  /**
+   * 【B】管理者ページを初期化する
+   */
+  function initializeAdminPage() {
+    document.getElementById('login-container')?.classList.add('hidden');
+    document.getElementById('selection-contents').classList.add('hidden');
+    document.getElementById('thank-you-message').classList.add('hidden');
+    const adminPage = document.getElementById('admin-page');
     if(adminPage) adminPage.classList.remove('hidden');
     setupAdminPageListeners();
     
-  } else if (!isDebugMode && localStorage.getItem('koudsaiVote2025') === 'true') {
-    console.log('ステップ11: 投票済みのため、サンクスページを表示します。');
-    if(selectionContents) selectionContents.classList.add('hidden');
-    if(thankYouMessage) thankYouMessage.classList.remove('hidden');
-    setupThanksPageListeners();
-    
-  } else {
-    // 通常モード かつ まだ投票していない場合 (またはデバッグモードの場合)
-    if(isDebugMode) console.log('ステップ11: デバッグモードで起動します。');
-    if(selectionContents) selectionContents.classList.remove('hidden');
-    if(thankYouMessage) thankYouMessage.classList.add('hidden');
-    if(adminPage) adminPage.classList.add('hidden');
-    
-    // 投票ページの準備
-    fetch('data.json')
-      .then(response => {
-        if (!response.ok) { throw new Error('data.json の読み込みに失敗しました。'); }
-        return response.json();
-      })
-      .then(data => {
-        console.log('ステップ11: data.json の読み込み成功。');
-        allNomineesData = data; 
-        setupVotingPage();
-        setupModalListeners();
-        setupFinalVoteButton();
-        // ★ alertOkBtnのリスナーはDOMContentLoaded直下に移動済み
-      })
-      .catch(error => {
-        console.error('ステップ11テスト失敗:', error);
-        showAlert(`致命的なエラー: ${error.message}。\ndata.jsonファイルが正しく配置されているか確認してください。`);
-      });
   }
     
 });
