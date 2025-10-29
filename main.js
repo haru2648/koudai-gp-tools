@@ -19,14 +19,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const isAdminMode = params.get('admin') === 'on'; // URLに 'admin' はあるか？
 
   if (lineAuthCode) {
-    // 【A】LINE認証から戻ってきた場合
+    // 【A】LINE認証から戻ってきた場合 (最優先)
+    // 認証コードを使ってログイン処理を実行
     handleLineCallback(lineAuthCode);
+    
   } else if (isAdminMode) {
     // 【B】管理者モードでアクセスされた場合
     initializeAdminPage();
+    
   } else {
-    // 【C】ユーザーが最初にアクセスした場合
-    showLoginPage();
+    // 【C】上記以外の場合、Firebaseのログイン状態を監視
+    // (通常のアクセス時、またはリロード時)
+    window.firebaseTools.onAuthStateChanged(window.firebaseTools.auth, (user) => {
+      if (user) {
+        // 【D】既にFirebaseにログイン済みの場合 (リロード成功)
+        console.log('ログイン状態を検知しました。', user.uid);
+        initializeVotingApp(); // 投票アプリを初期化
+      } else {
+        // 【E】未ログインの場合 (通常の初回アクセス)
+        console.log('未ログイン状態です。ログインページを表示します。');
+        showLoginPage(); // ログインページを表示
+      }
+    });
   }
 
   // ==========================================================
