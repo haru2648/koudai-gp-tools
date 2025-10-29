@@ -234,72 +234,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * 最終投票データをGASとFirestoreに送信する関数 (Firestore対応版)
+     * 最終投票データをGASとFirestoreに送信する関数 (★トランザクション対応版★)
      */
     const handleFinalVote = async (checkedRadio) => {
       // (↓DOM要素は後でキャッシュする)
       const finalVoteBtn = document.getElementById('final-vote-btn');
       const selectionContents = document.getElementById('selection-contents');
       const thankYouMessage = document.getElementById('thank-you-message');
-      // デバッグモード (後で定義)
+      // デバッグモード
       const isDebugMode = (new URLSearchParams(window.location.search)).get('debug') === 'on';
+
+      // Firebase/Firestoreのツールを取得
+      const firestore = window.firebaseTools.firestore;
+      const doc = window.firebaseTools.doc;
+      const getDoc = window.firebaseTools.getDoc; // エラー処理用にgetDocも取得
+      const userId = window.firebaseTools.auth.currentUser.uid;
 
       if(finalVoteBtn) { finalVoteBtn.disabled = true; finalVoteBtn.textContent = '投票処理中...'; }
 
+      // 送信するデータを作成 (変更なし)
       const grandPrixObject = JSON.parse(checkedRadio.value);
-      
-      // GASに送信するデータ
       const voteDataForGAS = { 
         action: 'submit_vote', 
-        mogiten: selections.mogiten, 
-        tenji: selections.tenji, 
-        stage: selections.stage, 
-        academic: selections.academic, 
+        mogiten: selections.mogiten, tenji: selections.tenji, stage: selections.stage, academic: selections.academic, 
         grand_prix: grandPrixObject,
-        votedAt: new Date().toISOString() // 投票日時を追加
+        votedAt: new Date().toISOString()
       };
-      
-      // Firestoreに保存するデータ
       const voteDataForFirestore = {
-        vote: voteDataForGAS,       // 投票内容のバックアップ
-        hasVoted: true,          // 投票済みフラグ
-        lotteryUsed: false,      // 抽選券は「未使用」
-        votedAt: voteDataForGAS.votedAt, // 投票日時
-        userId: userId             // 念のためUIDも保存
+        vote: voteDataForGAS, hasVoted: true, lotteryUsed: false,
+        votedAt: voteDataForGAS.votedAt, userId: userId
       };
 
       try {
-        // === ステップ1: GASに投票データを送信 (変更なし) ===
-        // (no-corsモードなので、成功したかどうかはここでは分からない)
-        fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(voteDataForGAS) });
-        console.log('GAS API: 投票リクエストを送信しました。');
+        // === ステップ1: Firestore トランザクションで投票を試みる ===
+        await window.firebaseTools.runTransaction(firestore, async (transaction) => {
+          // 投票ドキュメントの参照を取得
+          const userVoteDocRef = doc(firestore, "votes", userId);
+          // トランザクション内でドキュメントを取得
+          const docSnap = await transaction.get(userVoteDocRef);
 
-        // === ステップ2: Firestoreに「投票済み」の記録を保存 ===
-        // 4. localStorage.setItem の代わりに、setDoc を使用
+          if (docSnap.exists()) {
+            // 既に投票ドキュメントが存在する (＝複数回投票しようとしている)
+            throw new Error("ALREADY_VOTED"); // 投票済みとしてエラーを発生させる
+          }
+
+          // 投票ドキュメントが存在しない場合のみ、書き込みを実行
+          transaction.set(userVoteDocRef, voteDataForFirestore);
+        });
+
+        // === ステップ2: Firestoreへの書き込みが成功した場合のみ、GASに送信 ===
+        console.log('Firestore: トランザクション成功。投票記録を保存しました。');
+
+        // ★ デバッグモードでない時だけGASにも送信 (修正)
         if (!isDebugMode) {
-          // "votes" コレクションの中に、(ユーザーID) の名前でドキュメントを作成
-          const userVoteDocRef = doc(firestore, "votes", userId); 
-          await setDoc(userVoteDocRef, voteDataForFirestore);
-          console.log('Firestore: 投票記録を保存しました。');
+          fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(voteDataForGAS) });
+          console.log('GAS API: 投票リクエストを送信しました。');
+        } else {
+          console.log('デバッグモード: GASへの送信をスキップしました。');
         }
 
         // === ステップ3: サンクスページを表示 ===
         if(selectionContents) selectionContents.classList.add('hidden');
         if(thankYouMessage) thankYouMessage.classList.remove('hidden');
         
-        // 5. サンクスページのリスナーを設定 (Firestoreの参照と、初期状態 'unused' を渡す)
         const userVoteDocRef = doc(firestore, "votes", userId);
         setupThanksPageListeners(userVoteDocRef, 'unused'); // 投票直後は必ず 'unused'
 
       } catch (error) {
-        console.error('投票処理エラー (GASまたはFirestore):', error);
-        // 6. Firestoreのエラーだけをユーザーに通知
-        if (error.code) { // Firestoreのエラーの場合 (例: 'permission-denied')
-             showAlert(`投票記録の保存中にエラーが発生しました。\n詳細: ${error.message}`);
-        } else { // fetchのエラー (めったに起きない)
-             showAlert(`投票処理中にエラーが発生しました。\n詳細: ${error.message}`);
+        console.error('投票処理エラー:', error);
+        
+        if (error.message === "ALREADY_VOTED") {
+          // ★ ユーザーが2回目以降の投票ボタンを押した場合 ★
+          showAlert('すでに投票処理は完了しています。サンクスページを表示します。');
+          
+          // 投票ページを隠し、サンクスページを表示
+          if(selectionContents) selectionContents.classList.add('hidden');
+          if(thankYouMessage) thankYouMessage.classList.remove('hidden');
+          
+          // ★重要★ 既存の投票記録を読み直して、正しい抽選券の状態を復元する
+          const userVoteDocRef = doc(firestore, "votes", userId);
+          const docSnap = await getDoc(userVoteDocRef); // トランザクション外で通常読み取り
+          const currentStatus = docSnap.exists() && docSnap.data().lotteryUsed ? 'used' : 'unused';
+          setupThanksPageListeners(userVoteDocRef, currentStatus);
+
+        } else {
+          // それ以外のエラー (権限不足、ネットワーク障害など)
+          showAlert(`投票記録の保存中にエラーが発生しました。\n詳細: ${error.message}`);
+          if(finalVoteBtn) { finalVoteBtn.disabled = false; finalVoteBtn.textContent = 'この内容で投票を確定する'; }
         }
-        if(finalVoteBtn) { finalVoteBtn.disabled = false; finalVoteBtn.textContent = 'この内容で投票を確定する'; }
       }
     };
 
