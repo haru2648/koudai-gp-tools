@@ -73,8 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleLineCallback(code) {
     const loginContainer = document.getElementById('login-container');
     const statusMessage = document.getElementById('login-status-message');
+    const loginButton = document.getElementById('line-login-button'); // ★ この行を追加
     
     // 画面を「処理中...」に切り替え
+    if (loginButton) {
+        loginButton.classList.add('hidden'); // ★ この行を追加
+        // ボタンの直前にある説明文(pタグ)も非表示にする
+        if (loginButton.previousElementSibling) {
+            loginButton.previousElementSibling.classList.add('hidden'); // ★ この行を追加
+        }
+    }
+    
     if(loginContainer) loginContainer.classList.remove('hidden');
     document.getElementById('selection-contents').classList.add('hidden');
     document.getElementById('thank-you-message').classList.add('hidden');
