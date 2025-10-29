@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * 最終投票データをGASとFirestoreに送信する関数 (★トランザクション対応版★)
+     * 最終投票データをGASとFirestoreに送信する関数 (★トランザクション＆デバッグ対応版★)
      */
     const handleFinalVote = async (checkedRadio) => {
       // (↓DOM要素は後でキャッシュする)
@@ -266,39 +266,44 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        // === ステップ1: Firestore トランザクションで投票を試みる ===
-        await window.firebaseTools.runTransaction(firestore, async (transaction) => {
-          // 投票ドキュメントの参照を取得
-          const userVoteDocRef = doc(firestore, "votes", userId);
-          // トランザクション内でドキュメントを取得
-          const docSnap = await transaction.get(userVoteDocRef);
+        
+        // ▼▼▼ ここからが修正箇所 ▼▼▼
+        if (isDebugMode) {
+          // --- デバッグモードの場合 ---
+          // データベースへの書き込みをすべてスキップする
+          console.log('デバッグモード: Firestoreへの書き込みをスキップしました。');
+          console.log('デバッグモード: GASへの送信をスキップしました。');
 
-          if (docSnap.exists()) {
-            // 既に投票ドキュメントが存在する (＝複数回投票しようとしている)
-            throw new Error("ALREADY_VOTED"); // 投票済みとしてエラーを発生させる
-          }
+        } else {
+          // --- 通常モードの場合 (本番) ---
+          
+          // === ステップ1: Firestore トランザクションで投票を試みる ===
+          await window.firebaseTools.runTransaction(firestore, async (transaction) => {
+            const userVoteDocRef = doc(firestore, "votes", userId);
+            const docSnap = await transaction.get(userVoteDocRef);
 
-          // 投票ドキュメントが存在しない場合のみ、書き込みを実行
-          transaction.set(userVoteDocRef, voteDataForFirestore);
-        });
+            if (docSnap.exists()) {
+              throw new Error("ALREADY_VOTED"); // 投票済みとしてエラーを発生させる
+            }
+            // 投票ドキュメントが存在しない場合のみ、書き込みを実行
+            transaction.set(userVoteDocRef, voteDataForFirestore);
+          });
 
-        // === ステップ2: Firestoreへの書き込みが成功した場合のみ、GASに送信 ===
-        console.log('Firestore: トランザクション成功。投票記録を保存しました。');
-
-        // ★ デバッグモードでない時だけGASにも送信 (修正)
-        if (!isDebugMode) {
+          // === ステップ2: Firestoreへの書き込みが成功した場合のみ、GASに送信 ===
+          console.log('Firestore: トランザクション成功。投票記録を保存しました。');
           fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(voteDataForGAS) });
           console.log('GAS API: 投票リクエストを送信しました。');
-        } else {
-          console.log('デバッグモード: GASへの送信をスキップしました。');
         }
+        // ▲▲▲ ここまでが修正箇所 ▲▲▲
 
-        // === ステップ3: サンクスページを表示 ===
+
+        // === ステップ3: サンクスページを表示 (デバッグ/通常共通) ===
         if(selectionContents) selectionContents.classList.add('hidden');
         if(thankYouMessage) thankYouMessage.classList.remove('hidden');
         
         const userVoteDocRef = doc(firestore, "votes", userId);
-        setupThanksPageListeners(userVoteDocRef, 'unused'); // 投票直後は必ず 'unused'
+        // (デバッグモードでは userVoteDocRef は実際には存在しないが、リスナー設定だけ行う)
+        setupThanksPageListeners(userVoteDocRef, 'unused'); 
 
       } catch (error) {
         console.error('投票処理エラー:', error);
@@ -307,13 +312,11 @@ document.addEventListener('DOMContentLoaded', () => {
           // ★ ユーザーが2回目以降の投票ボタンを押した場合 ★
           showAlert('すでに投票処理は完了しています。サンクスページを表示します。');
           
-          // 投票ページを隠し、サンクスページを表示
           if(selectionContents) selectionContents.classList.add('hidden');
           if(thankYouMessage) thankYouMessage.classList.remove('hidden');
           
-          // ★重要★ 既存の投票記録を読み直して、正しい抽選券の状態を復元する
           const userVoteDocRef = doc(firestore, "votes", userId);
-          const docSnap = await getDoc(userVoteDocRef); // トランザクション外で通常読み取り
+          const docSnap = await getDoc(userVoteDocRef); 
           const currentStatus = docSnap.exists() && docSnap.data().lotteryUsed ? 'used' : 'unused';
           setupThanksPageListeners(userVoteDocRef, currentStatus);
 
