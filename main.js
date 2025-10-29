@@ -80,6 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         await window.firebaseTools.signInWithCustomToken(window.firebaseTools.auth, firebaseToken);
         
         console.log('Firebaseへのログインに成功しました！');
+
+
+        // ▼▼▼ この1行を追加 ▼▼▼
+        // ブラウザのURL履歴から ?code=... を削除し、リロードエラーを防ぐ
+        window.history.replaceState({}, document.title, window.location.pathname);
         
         // ★★★ ログイン成功！投票アプリ本体を初期化 ★★★
         initializeVotingApp(); // ここからFirestore対応版の関数が呼ばれる
