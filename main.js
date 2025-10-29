@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (lineAuthCode) {
     // 【A】LINE認証から戻ってきた場合 (最優先)
-    // 認証コードを使ってログイン処理を実行
     handleLineCallback(lineAuthCode);
     
   } else if (isAdminMode) {
@@ -29,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
   } else {
     // 【C】上記以外の場合、Firebaseのログイン状態を監視
-    // (通常のアクセス時、またはリロード時)
     window.firebaseTools.onAuthStateChanged(window.firebaseTools.auth, (user) => {
       if (user) {
         // 【D】既にFirebaseにログイン済みの場合 (リロード成功)
@@ -73,14 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleLineCallback(code) {
     const loginContainer = document.getElementById('login-container');
     const statusMessage = document.getElementById('login-status-message');
-    const loginButton = document.getElementById('line-login-button'); // ★ この行を追加
+    const loginButton = document.getElementById('line-login-button'); // ★
     
     // 画面を「処理中...」に切り替え
     if (loginButton) {
-        loginButton.classList.add('hidden'); // ★ この行を追加
+        loginButton.classList.add('hidden'); // ★
         // ボタンの直前にある説明文(pタグ)も非表示にする
         if (loginButton.previousElementSibling) {
-            loginButton.previousElementSibling.classList.add('hidden'); // ★ この行を追加
+            loginButton.previousElementSibling.classList.add('hidden'); // ★
         }
     }
     
@@ -90,37 +88,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('admin-page').classList.add('hidden');
     if(statusMessage) statusMessage.textContent = 'ログイン情報を確認しています...';
     
-    // さっき作った「入国審査官(lineLoginCallback)」を呼び出す準備
+    // Cloud Functionの呼び出し
     const lineLoginCallback = window.firebaseTools.httpsCallable(window.firebaseTools.functions, 'lineLoginCallback');
 
-    // 「通行証(code)」を渡して、審査を依頼する
     lineLoginCallback({ code: code })
       .then(async (result) => {
-        // 審査官から「正式な身分証(token)」が返ってきた！
         const firebaseToken = result.data.token;
-        
-        // その身分証を使って、Firebaseに正式にログインする
         await window.firebaseTools.signInWithCustomToken(window.firebaseTools.auth, firebaseToken);
-        
         console.log('Firebaseへのログインに成功しました！');
 
-
-        // ▼▼▼ この1行を追加 ▼▼▼
-        // ブラウザのURL履歴から ?code=... を削除し、リロードエラーを防ぐ
+        // URLから ?code=... を削除
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        // ★★★ ログイン成功！投票アプリ本体を初期化 ★★★
-        initializeVotingApp(); // ここからFirestore対応版の関数が呼ばれる
+        // 投票アプリ本体を初期化
+        initializeVotingApp(); 
       })
       .catch((error) => {
-        // 何か問題があった場合
         console.error("ログイン処理エラー:", error);
         if(statusMessage) statusMessage.textContent = `エラーが発生しました: ${error.message}`;
       });
   }
 
   /**
-   * ★★★ ログイン成功後に呼び出す、投票アプリ本体の初期化関数 (Firestore対応版) ★★★
+   * ★★★ ログイン成功後に呼び出す、投票アプリ本体の初期化関数 ★★★
    */
   async function initializeVotingApp() { // 1. async (非同期) 関数に変更
 
@@ -138,16 +128,14 @@ document.addEventListener('DOMContentLoaded', () => {
       showAlert("ユーザー情報が取得できませんでした。再度ログインしてください。");
       return;
     }
-    // この userId が、LINEアカウント固有のID（UID）になります
     const userId = currentUser.uid; 
 
     // --- 関数定義 (initializeVotingAppの内側) ---
 
     /**
-     * カスタム警告を表示する関数 (グローバルにキャッシュされた要素を使う)
+     * カスタム警告を表示する関数
      */
     const showAlert = (message) => {
-      // (↓DOM要素は後でキャッシュする)
       const customAlertMessage = document.getElementById('custom-alert-message');
       const customAlertOverlay = document.getElementById('custom-alert-overlay');
       if(customAlertMessage && customAlertOverlay) {
@@ -169,23 +157,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * サンクスページの抽選券リスナーを設定する関数 (Firestore対応版)
+     * サンクスページの抽選券リスナーを設定する関数
      */
     function setupThanksPageListeners(userVoteDocRef, initialStatus = 'unused') {
-      // (↓DOM要素は後でキャッシュする)
       const lotteryTicket = document.getElementById('lottery-ticket');
       const confirmTitle = document.querySelector('#custom-confirm-box .confirm-title');
       const confirmMessage = document.querySelector('#custom-confirm-box .confirm-message');
       const customConfirmOverlay = document.getElementById('custom-confirm-overlay');
       const confirmOkBtn = document.getElementById('confirm-ok-btn');
       const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-      // デバッグモード (後で定義)
       const isDebugMode = (new URLSearchParams(window.location.search)).get('debug') === 'on';
 
       if (!lotteryTicket) return;
       const statusText = lotteryTicket.querySelector('.ticket-status');
       
-      // 抽選券の初期状態をDB（または投票直後）の状態に合わせて設定
       if (initialStatus === 'used') {
         lotteryTicket.classList.add('used');
         if (statusText) statusText.textContent = '（使用済み）';
@@ -195,38 +180,31 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       lotteryTicket.addEventListener('click', () => {
-        // 既に使用済みなら何もしない
         if (lotteryTicket.classList.contains('used')) return;
 
-        // 確認ダイアログを表示
         if(confirmTitle) confirmTitle.textContent = '抽選券の使用確認';
         if(confirmMessage) confirmMessage.innerHTML = '係員にこの画面を見せましたか？<br>「OK」を押すと使用済みになり、元に戻せません。';
         if(customConfirmOverlay) customConfirmOverlay.classList.remove('hidden');
 
-        // OKボタンが押されたら非同期処理を実行
         if(confirmOkBtn) {
-          confirmOkBtn.onclick = async () => { // 2. async (非同期) に変更
+          confirmOkBtn.onclick = async () => { 
             if(customConfirmOverlay) customConfirmOverlay.classList.add('hidden');
             
-            // デバッグモードがオフの時だけ、Firestoreに「使用済み」を記録
             if (!isDebugMode) {
               try {
-                // Firestoreのドキュメントを「使用済み」に更新 (マージ=差分更新)
                 await setDoc(userVoteDocRef, { lotteryUsed: true }, { merge: true });
                 console.log('Firestore: 抽選券を使用済みに更新しました。');
               } catch (error) {
                 console.error("Firestore抽選券更新エラー:", error);
                 showAlert(`抽選券の状態更新中にエラーが発生しました。\n${error.message}`);
-                return; // エラーならUIを変更しない
+                return; 
               }
             }
             
-            // UI（画面）を「使用済み」に変更
             lotteryTicket.classList.add('used');
             if(statusText) statusText.textContent = '（使用済み）';
           };
         }
-        // キャンセルボタン
         if(confirmCancelBtn) {
           confirmCancelBtn.onclick = () => { if(customConfirmOverlay) customConfirmOverlay.classList.add('hidden'); };
         }
@@ -237,22 +215,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * 最終投票データをGASとFirestoreに送信する関数 (★トランザクション＆デバッグ対応版★)
      */
     const handleFinalVote = async (checkedRadio) => {
-      // (↓DOM要素は後でキャッシュする)
       const finalVoteBtn = document.getElementById('final-vote-btn');
       const selectionContents = document.getElementById('selection-contents');
       const thankYouMessage = document.getElementById('thank-you-message');
-      // デバッグモード
       const isDebugMode = (new URLSearchParams(window.location.search)).get('debug') === 'on';
 
-      // Firebase/Firestoreのツールを取得
       const firestore = window.firebaseTools.firestore;
       const doc = window.firebaseTools.doc;
-      const getDoc = window.firebaseTools.getDoc; // エラー処理用にgetDocも取得
+      const getDoc = window.firebaseTools.getDoc; 
       const userId = window.firebaseTools.auth.currentUser.uid;
 
       if(finalVoteBtn) { finalVoteBtn.disabled = true; finalVoteBtn.textContent = '投票処理中...'; }
 
-      // 送信するデータを作成 (変更なし)
       const grandPrixObject = JSON.parse(checkedRadio.value);
       const voteDataForGAS = { 
         action: 'submit_vote', 
@@ -267,10 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         
-        // ▼▼▼ ここからが修正箇所 ▼▼▼
         if (isDebugMode) {
           // --- デバッグモードの場合 ---
-          // データベースへの書き込みをすべてスキップする
           console.log('デバッグモード: Firestoreへの書き込みをスキップしました。');
           console.log('デバッグモード: GASへの送信をスキップしました。');
 
@@ -283,9 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const docSnap = await transaction.get(userVoteDocRef);
 
             if (docSnap.exists()) {
-              throw new Error("ALREADY_VOTED"); // 投票済みとしてエラーを発生させる
+              throw new Error("ALREADY_VOTED"); 
             }
-            // 投票ドキュメントが存在しない場合のみ、書き込みを実行
             transaction.set(userVoteDocRef, voteDataForFirestore);
           });
 
@@ -294,15 +265,12 @@ document.addEventListener('DOMContentLoaded', () => {
           fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(voteDataForGAS) });
           console.log('GAS API: 投票リクエストを送信しました。');
         }
-        // ▲▲▲ ここまでが修正箇所 ▲▲▲
-
 
         // === ステップ3: サンクスページを表示 (デバッグ/通常共通) ===
         if(selectionContents) selectionContents.classList.add('hidden');
         if(thankYouMessage) thankYouMessage.classList.remove('hidden');
         
         const userVoteDocRef = doc(firestore, "votes", userId);
-        // (デバッグモードでは userVoteDocRef は実際には存在しないが、リスナー設定だけ行う)
         setupThanksPageListeners(userVoteDocRef, 'unused'); 
 
       } catch (error) {
@@ -353,15 +321,33 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const firstChild = form.firstChild;
       if (firstChild) { form.insertAdjacentHTML('afterbegin', htmlContent); } else { form.innerHTML = htmlContent; }
-      setupOpenModalButtons();
+      
+      // ▼▼▼ この関数がエラーの原因 ▼▼▼
+      setupOpenModalButtons(); // この関数が呼び出される
+      // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+      
       console.log('部門ボタンの生成完了。');
     }
 
     /**
-     * モーダルの「戻る」「決定」ボタンのリスナーを設定する関数
+     * モーダルの「開く」ボタンにリスナーを設定する関数
+     * (★ エラーになっていたため、ここに関数定義を復活させました ★)
+     */
+    function setupOpenModalButtons() {
+       const openModalButtons = document.querySelectorAll('.open-modal-btn');
+      openModalButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const departmentKey = button.dataset.department; 
+          openModal(departmentKey); 
+        });
+      });
+    }
+
+    /**
+     * モーダルの「戻る」「決定」ボタンと「検索欄」のリスナーを設定する関数
+     * (★ 検索機能を追加 ★)
      */
     function setupModalListeners() {
-      // (↓DOM要素は後でキャッシュする)
       const backBtn = document.getElementById('modal-back-btn');
       const confirmBtn = document.getElementById('modal-confirm-btn');
       const modalNomineeList = document.getElementById('modal-nominee-list');
@@ -369,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if(backBtn) { backBtn.addEventListener('click', closeModal); }
       if(confirmBtn) {
         confirmBtn.addEventListener('click', () => {
-          // ( ... 既存の決定ボタンの処理 ... )
           const selectedRadio = modalNomineeList.querySelector('input[name="modal-selection"]:checked');
           if (!selectedRadio) { showAlert('企画を1つ選択してください。'); return; }
           selections[currentDepartment] = JSON.parse(selectedRadio.value);
@@ -379,62 +364,32 @@ document.addEventListener('DOMContentLoaded', () => {
           closeModal(); 
         });
       }
-
-      // ▼▼▼ 検索欄のロジックをここに追加 ▼▼▼
+      
+      // ▼▼▼ 検索欄のロジック ▼▼▼
       const searchInput = document.getElementById('modal-search-input');
       if (searchInput && modalNomineeList) {
         searchInput.addEventListener('input', (e) => {
           const searchTerm = e.target.value.toLowerCase().trim();
-          
-          // リスト内の全アイテムを取得
           const items = modalNomineeList.querySelectorAll('.nominee-item');
           
           items.forEach(item => {
-            // アイテムから企画名と団体名を取得
             const planName = item.querySelector('.plan-name')?.textContent.toLowerCase() || '';
             const orgName = item.querySelector('.organization-name')?.textContent.toLowerCase() || '';
-
-            // 検索語が企画名 または 団体名に含まれているかチェック
             if (planName.includes(searchTerm) || orgName.includes(searchTerm)) {
-              item.style.display = ''; // 含まれていれば表示
+              item.style.display = ''; 
             } else {
-              item.style.display = 'none'; // 含まれていなければ非表示
+              item.style.display = 'none'; 
             }
           });
         });
       }
-      // ▲▲▲ ここまで追加 ▲▲▲
-
-    } // setupModalListeners 関数の終わり
-
-    /**
-     * モーダルの「戻る」「決定」ボタンのリスナーを設定する関数
-     */
-    function setupModalListeners() {
-      // (↓DOM要素は後でキャッシュする)
-      const backBtn = document.getElementById('modal-back-btn');
-      const confirmBtn = document.getElementById('modal-confirm-btn');
-      const modalNomineeList = document.getElementById('modal-nominee-list');
-
-      if(backBtn) { backBtn.addEventListener('click', closeModal); }
-      if(confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
-          const selectedRadio = modalNomineeList.querySelector('input[name="modal-selection"]:checked');
-          if (!selectedRadio) { showAlert('企画を1つ選択してください。'); return; }
-          selections[currentDepartment] = JSON.parse(selectedRadio.value);
-          console.log('選択を保存', selections);
-          updateButtonState();
-          checkAndShowGrandPrixSection();
-          closeModal(); 
-        });
-      }
+      // ▲▲▲ 検索ロジックここまで ▲▲▲
     }
 
     /**
      * 最終投票ボタンのリスナーを設定する関数
      */
     function setupFinalVoteButton() {
-      // (↓DOM要素は後でキャッシュする)
       const finalVoteBtn = document.getElementById('final-vote-btn');
       const confirmTitle = document.querySelector('#custom-confirm-box .confirm-title');
       const confirmMessage = document.querySelector('#custom-confirm-box .confirm-message');
@@ -470,7 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * 4部門すべてが選択されたかチェックし、グランプリセクションを表示する関数
      */
     function checkAndShowGrandPrixSection() {
-      // (↓DOM要素は後でキャッシュする)
       const grandPrixList = document.getElementById('grand-prix-list');
       const grandPrixSection = document.getElementById('grand-prix-voting-section');
       const finalVoteBtnContainer = document.getElementById('final-vote-btn-container');
@@ -489,9 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * モーダルを開き、企画リストを生成する関数
+     * (★ 検索機能を追加 ★)
      */
     function openModal(departmentKey) {
-      // (↓DOM要素は後でキャッシュする)
       const modalTitle = document.getElementById('modal-title');
       const modalNomineeList = document.getElementById('modal-nominee-list');
       const modalOverlay = document.getElementById('modal-overlay');
@@ -543,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * モーダルを閉じる関数
      */
     function closeModal() {
-      // (↓DOM要素は後でキャッシュする)
       const modalOverlay = document.getElementById('modal-overlay');
       if(modalOverlay) modalOverlay.classList.add('hidden'); console.log('モーダル非表示');
     }
@@ -552,17 +505,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- メイン処理 (initializeVotingAppの内側) ---
     // ==========================================================
     
-    // デバッグモードのチェック (URLに ?debug=on があるか)
     const isDebugMode = (new URLSearchParams(window.location.search)).get('debug') === 'on';
 
-    // 7. ★★★★★ Firestoreで投票/抽選券の状態をチェック ★★★★★
     try {
-      // "votes"コレクションから、(ユーザーID)ドキュメントの参照を取得
       const userVoteDocRef = doc(firestore, "votes", userId);
       
-      // デバッグモードがオフの場合のみ、DBをチェック
       if (!isDebugMode) {
-        // ドキュメントを読み込む
         const docSnap = await getDoc(userVoteDocRef);
 
         if (docSnap.exists()) {
@@ -570,19 +518,15 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = docSnap.data();
           console.log('Firestore: 投票済みのユーザーです。', data);
 
-          // ログインページを非表示にし、サンクスページを表示
           document.getElementById('login-container')?.classList.add('hidden');
           document.getElementById('selection-contents').classList.add('hidden');
           const thankYouMessage = document.getElementById('thank-you-message');
           if (thankYouMessage) thankYouMessage.classList.remove('hidden');
 
-          // ★ダイアログ用のボタンをキャッシュ
-          // (サンクスページでも抽選券クリック時に使うため、ここでキャッシュする)
           const alertOkBtn = document.getElementById('alert-ok-btn');
           const customAlertOverlay = document.getElementById('custom-alert-overlay');
           if(alertOkBtn && customAlertOverlay) { alertOkBtn.addEventListener('click', () => customAlertOverlay.classList.add('hidden')); }
 
-          // 抽選券の状態 (data.lotteryUsed) を渡してリスナーをセットアップ
           setupThanksPageListeners(userVoteDocRef, data.lotteryUsed ? 'used' : 'unused');
           
           return; // ★★★★★ここで処理を終了★★★★★
@@ -592,58 +536,45 @@ document.addEventListener('DOMContentLoaded', () => {
       // --- 未投票のユーザー (またはデバッグモード) ---
       console.log('Firestore: 未投票のユーザーです。投票ページを初期化します。');
       
-      // ログインページを非表示にし、投票ページを表示する
       document.getElementById('login-container')?.classList.add('hidden');
       document.getElementById('selection-contents').classList.remove('hidden');
 
-      // 8. ↓↓↓ 既存の読み込み処理 (変更なし) ↓↓↓
-
-      // DOM要素のキャッシュ (ここでまとめて取得)
-      // (内部関数で使う変数は、ここで取得しておくと効率的)
       const alertOkBtn = document.getElementById('alert-ok-btn');
       const customAlertOverlay = document.getElementById('custom-alert-overlay');
       if(alertOkBtn && customAlertOverlay) { alertOkBtn.addEventListener('click', () => customAlertOverlay.classList.add('hidden')); }
       
-      // 企画データ(JSON)の読み込み (★ローカルのdata.jsonから読み込むように変更★)
-try {
-  // ★GASのURLからローカルの 'data.json' ファイルパスに変更
-  const response = await fetch('./data.json'); 
-  
-  if (!response.ok) { 
-    throw new Error(`ネットワークエラー: ${response.status} ${response.statusText}`); 
-  }
-  allNomineesData = await response.json();
-  console.log('ローカルのdata.jsonから企画データを読み込みました:', allNomineesData);
-  
-  // JSONの形式チェック (data.jsonの形式に合わせる)
-  if(!allNomineesData.mogiten || !allNomineesData.tenji || !allNomineesData.stage || !allNomineesData.academic) {
-    throw new Error('企画データ(data.json)の形式が正しくありません。(mogiten, tenji, stage, academicのキーが必要です)');
-  }
-  
-  // 読み込みが成功したら、投票ページ（部門ボタン）を生成
-  setupVotingPage();
-  
-} catch (error) {
-  console.error('企画データの読み込みエラー:', error);
-  const loadingMsg = document.getElementById('loading-message');
-  if (loadingMsg) { loadingMsg.textContent = `エラー: 企画データを読み込めませんでした。\n${error.message}`; }
-}
+      // 企画データ(JSON)の読み込み
+      try {
+        const response = await fetch('./data.json'); 
+        if (!response.ok) { 
+          throw new Error(`ネットワークエラー: ${response.status} ${response.statusText}`); 
+        }
+        allNomineesData = await response.json();
+        console.log('ローカルのdata.jsonから企画データを読み込みました:', allNomineesData);
+        
+        if(!allNomineesData.mogiten || !allNomineesData.tenji || !allNomineesData.stage || !allNomineesData.academic) {
+          throw new Error('企画データ(data.json)の形式が正しくありません。(mogiten, tenji, stage, academicのキーが必要です)');
+        }
+        
+        setupVotingPage();
+        
+      } catch (error) {
+        console.error('企画データの読み込みエラー:', error);
+        const loadingMsg = document.getElementById('loading-message');
+        if (loadingMsg) { loadingMsg.textContent = `エラー: 企画データを読み込めませんでした。\n${error.message}`; }
+      }
 
-      // イベントリスナーの設定 (変更なし)
+      // イベントリスナーの設定
       setupModalListeners();
       setupFinalVoteButton();
       
-      // 9. ↑↑↑ 既存の読み込み処理 (変更なし) ↑↑↑
-
-
     } catch (error) {
-      // 10. Firestoreの読み取りエラー
+      // Firestoreの読み取りエラー
       console.error("Firestore 状態チェックエラー:", error);
       showAlert(`投票状態の確認中にエラーが発生しました。\n${error.message}\nページを再読み込みしてください。`);
       
-      // エラーが発生したらログイン画面に戻す
-      document.getElementById('login-container')?.classList.remove('hidden'); // ログイン画面を再表示
-      document.getElementById('selection-contents').classList.add('hidden'); // 他を隠す
+      document.getElementById('login-container')?.classList.remove('hidden'); 
+      document.getElementById('selection-contents').classList.add('hidden'); 
       document.getElementById('thank-you-message').classList.add('hidden');
       document.getElementById('admin-page').classList.add('hidden');
       
@@ -666,13 +597,6 @@ try {
     const adminPage = document.getElementById('admin-page');
     if(adminPage) adminPage.classList.remove('hidden');
 
-    // ★★★★★★★
-    // 管理者ページ用のリスナー設定
-    // ★★★★★★★
-    
-    // --- 関数定義 (管理者ページ用) ---
-    // (管理ページは簡潔さのため、グローバルなshowAlertではなく標準のalert/confirmを使う)
-    
     /**
      * 管理者ページのイベントリスナーを設定する関数
      */
@@ -683,7 +607,6 @@ try {
       const debugStatus = document.getElementById('debug-status');
       const isDebugMode = (new URLSearchParams(window.location.search)).get('debug') === 'on';
       
-      // デバッグモード表示
       if(debugStatus) {
         const statusText = isDebugMode ? '有効' : '無効';
         const statusColor = isDebugMode ? 'green' : 'red';
@@ -691,11 +614,10 @@ try {
         debugStatus.style.color = statusColor;
       }
       
-      // 全データリセットボタン (GAS側)
       if (adminResetButton && adminTokenInput) {
         adminResetButton.addEventListener('click', async () => {
           const token = adminTokenInput.value;
-          const correctToken = "cfn60055"; // ★ トークンはハードコード
+          const correctToken = "cfn60055"; 
           if (token !== correctToken) { 
             alert("リセットトークンが違います。"); 
             return; 
@@ -715,8 +637,6 @@ try {
         });
       }
 
-      // ブラウザ状態リセットボタン (localStorage)
-      // (これはFirestoreとは関係なく、テスト用にブラウザのローカルデータを消すボタンなので、残しておきます)
       const adminResetLocalButton = document.getElementById('admin-reset-local-button');
       if (adminResetLocalButton) {
         adminResetLocalButton.addEventListener('click', () => {
@@ -728,7 +648,6 @@ try {
         });
       }
 
-      // 戻るボタン
       if (adminBackButton) {
         adminBackButton.addEventListener('click', () => { window.location.href = './'; });
       }
