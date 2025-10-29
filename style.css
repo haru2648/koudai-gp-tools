@@ -443,6 +443,31 @@ code {
 }
 
 
+/* === モーダル検索欄のスタイル === */
+.modal-search-container {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #f8f8f8; /* 背景を少し変える (任意) */
+}
+
+#modal-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-sizing: border-box; /* paddingを含めて幅100%にする */
+  font-family: var(--font-body);
+}
+
+/* スマホでの検索欄の余白調整 (任意) */
+@media (max-width: 600px) {
+  .modal-search-container {
+    padding: 8px 18px;
+  }
+}
+
+
 /* === スマートフォン向けの表示調整 === */
 @media (max-width: 600px) {
   body { padding: 15px; padding-bottom: 80px; } 

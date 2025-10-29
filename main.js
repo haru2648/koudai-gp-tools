@@ -358,17 +358,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * モーダルの「開く」ボタンにリスナーを設定する関数
+     * モーダルの「戻る」「決定」ボタンのリスナーを設定する関数
      */
-    function setupOpenModalButtons() {
-       const openModalButtons = document.querySelectorAll('.open-modal-btn');
-      openModalButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const departmentKey = button.dataset.department; 
-          openModal(departmentKey); 
+    function setupModalListeners() {
+      // (↓DOM要素は後でキャッシュする)
+      const backBtn = document.getElementById('modal-back-btn');
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+      const modalNomineeList = document.getElementById('modal-nominee-list');
+
+      if(backBtn) { backBtn.addEventListener('click', closeModal); }
+      if(confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          // ( ... 既存の決定ボタンの処理 ... )
+          const selectedRadio = modalNomineeList.querySelector('input[name="modal-selection"]:checked');
+          if (!selectedRadio) { showAlert('企画を1つ選択してください。'); return; }
+          selections[currentDepartment] = JSON.parse(selectedRadio.value);
+          console.log('選択を保存', selections);
+          updateButtonState();
+          checkAndShowGrandPrixSection();
+          closeModal(); 
         });
-      });
-    }
+      }
+
+      // ▼▼▼ 検索欄のロジックをここに追加 ▼▼▼
+      const searchInput = document.getElementById('modal-search-input');
+      if (searchInput && modalNomineeList) {
+        searchInput.addEventListener('input', (e) => {
+          const searchTerm = e.target.value.toLowerCase().trim();
+          
+          // リスト内の全アイテムを取得
+          const items = modalNomineeList.querySelectorAll('.nominee-item');
+          
+          items.forEach(item => {
+            // アイテムから企画名と団体名を取得
+            const planName = item.querySelector('.plan-name')?.textContent.toLowerCase() || '';
+            const orgName = item.querySelector('.organization-name')?.textContent.toLowerCase() || '';
+
+            // 検索語が企画名 または 団体名に含まれているかチェック
+            if (planName.includes(searchTerm) || orgName.includes(searchTerm)) {
+              item.style.display = ''; // 含まれていれば表示
+            } else {
+              item.style.display = 'none'; // 含まれていなければ非表示
+            }
+          });
+        });
+      }
+      // ▲▲▲ ここまで追加 ▲▲▲
+
+    } // setupModalListeners 関数の終わり
 
     /**
      * モーダルの「戻る」「決定」ボタンのリスナーを設定する関数
@@ -458,6 +495,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const modalTitle = document.getElementById('modal-title');
       const modalNomineeList = document.getElementById('modal-nominee-list');
       const modalOverlay = document.getElementById('modal-overlay');
+
+      // ▼▼▼ 検索欄のリセット処理を先頭に追加 ▼▼▼
+      const searchInput = document.getElementById('modal-search-input');
+      if (searchInput) {
+        searchInput.value = ''; // 検索ボックスをクリアする
+      }
+      // ▲▲▲ ここまで追加 ▲▲▲
 
       currentDepartment = departmentKey; 
       const departmentData = allNomineesData[departmentKey]; 
