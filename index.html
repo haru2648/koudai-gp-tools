@@ -60,15 +60,6 @@
     };
   </script>
   <!-- ▲▲▲ ここまで置き換え ▲▲▲ -->```
-
-**前回ご提案した `main.js` のコードはそのままで問題ありません。**
-
-この `index.html` の修正により、
-1.  `import`が正しく行われ、`'getAuth' has already been declared`エラーが解消します。
-2.  スクリプトが最後まで正常に実行され、`window.firebaseTools`に`signInAnonymously`が正しく設定されます。
-3.  `main.js`が`signInAnonymously`を正常に呼び出せるようになり、2つ目のエラーも解消します。
-
-お手数ですが、こちらに差し替えてから再度、代理投票モード（`?proxy=on`）をお試しいただけますでしょうか。
 </head>
 <body>
 
@@ -185,7 +176,7 @@
 
     <hr style="margin: 20px 0;"> 
 
-    
+
     <h3>デバッグモード</h3>
     <p>
       URLの末尾に <code>?debug=on</code> を付けてアクセスすると、デバッグモードが有効になります。<br>
