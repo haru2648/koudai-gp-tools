@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 認証ボタンがクリックされたときの処理
       if (loginButton && passwordInput && errorMessage) {
           loginButton.addEventListener('click', () => {
-              const correctPassword = "koudai-proxy";
+              const correctPassword = "grandprix-proxy";
               if (passwordInput.value === correctPassword) {
                   localStorage.setItem('proxyAuthSuccess', 'true');
                   console.log('代理投票のパスワードが一致しました。');
