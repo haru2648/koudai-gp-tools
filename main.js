@@ -17,28 +17,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const lineAuthCode = params.get('code'); // URLに 'code' はあるか？
   const isAdminMode = params.get('admin') === 'on'; // URLに 'admin' はあるか？
+  // ★★★ ここから追加 ★★★
+  const isProxyMode = params.get('proxy') === 'on'; // 代理投票モードか？
 
-  if (lineAuthCode) {
-    // 【A】LINE認証から戻ってきた場合 (最優先)
+  
+
+    if (isProxyMode) {
+    // 【NEW】代理投票モードの場合
+    const password = prompt("運営用のパスワードを入力してください:", "");
+    const correctPassword = "koudai-proxy"; // ★ 運営用の合言葉を設定
+    if (password === correctPassword) {
+      initializeProxyVotingApp(); // パスワードが一致したら代理投票アプリを初期化
+    } else {
+      alert("パスワードが違います。");
+      showLoginPage(); // トップページに戻す
+    }
+  // ★★★ ここまで追加 ★★★
+
+  } else if (lineAuthCode) {
+    // 【A】LINE認証から戻ってきた場合 (変更なし)
     handleLineCallback(lineAuthCode);
     
   } else if (isAdminMode) {
-    // 【B】管理者モードでアクセスされた場合
+    // 【B】管理者モードでアクセスされた場合 (変更なし)
     initializeAdminPage();
     
   } else {
-    // 【C】上記以外の場合、Firebaseのログイン状態を監視
-    window.firebaseTools.onAuthStateChanged(window.firebaseTools.auth, (user) => {
-      if (user) {
-        // 【D】既にFirebaseにログイン済みの場合 (リロード成功)
-        console.log('ログイン状態を検知しました。', user.uid);
-        initializeVotingApp(); // 投票アプリを初期化
-      } else {
-        // 【E】未ログインの場合 (通常の初回アクセス)
-        console.log('未ログイン状態です。ログインページを表示します。');
-        showLoginPage(); // ログインページを表示
-      }
-    });
+    // 【C】上記以外の場合、Firebaseのログイン状態を監視 (変更なし)
+    // ...
   }
 
   // ==========================================================
@@ -656,5 +662,103 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- メイン処理 (initializeAdminPageの内側) ---
     setupAdminPageListeners();
   }
+    /**
+   * 【NEW】代理投票ページを初期化する
+   */
+  async function initializeProxyVotingApp() {
+    console.log('代理投票モードで初期化します。');
+    
+    // --- 画面の表示切り替え ---
+    document.getElementById('login-container')?.classList.add('hidden');
+    document.getElementById('selection-contents').classList.remove('hidden');
+    
+    // 既存の関数を再利用して投票ページのボタンやモーダルをセットアップ
+    setupModalListeners(); 
+    
+    // ★ 代理投票専用の「最終投票ボタン」のリスナーを設定
+    setupProxyFinalVoteButton(); 
+
+    // --- 企画データ(JSON)の読み込み ---
+    try {
+      const response = await fetch('./data.json'); 
+      if (!response.ok) { throw new Error(`ネットワークエラー: ${response.status}`); }
+      allNomineesData = await response.json();
+      console.log('企画データを読み込みました:', allNomineesData);
+      
+      // 既存の関数を再利用して投票ページの部門セクションを生成
+      setupVotingPage();
+      
+    } catch (error) {
+      console.error('企画データの読み込みエラー:', error);
+      const loadingMsg = document.getElementById('loading-message');
+      if (loadingMsg) { loadingMsg.textContent = `エラー: 企画データを読み込めませんでした。`; }
+    }
+  }
+
+  /**
+   * 【NEW】代理投票用の「最終投票ボタン」のリスナー
+   */
+  function setupProxyFinalVoteButton() {
+    const finalVoteBtn = document.getElementById('final-vote-btn');
+    if (!finalVoteBtn) return;
+
+    finalVoteBtn.addEventListener('click', () => {
+      const grandPrixSelection = document.querySelector('input[name="grand-prix"]:checked');
+      if (!grandPrixSelection) { 
+        alert('ベストオブ工大祭を1つ選んでください。'); 
+        return; 
+      }
+      if (confirm("この内容で代理投票を確定しますか？")) {
+        handleProxyVote(grandPrixSelection);
+      }
+    });
+  }
+
+  /**
+   * 【NEW】代理投票データをGASに送信する関数
+   */
+  const handleProxyVote = async (checkedRadio) => {
+    const finalVoteBtn = document.getElementById('final-vote-btn');
+    if(finalVoteBtn) { 
+      finalVoteBtn.disabled = true; 
+      finalVoteBtn.textContent = '投票処理中...'; 
+    }
+
+    const grandPrixObject = JSON.parse(checkedRadio.value);
+    
+    // GASに送信するデータを作成
+    const voteDataForGAS = { 
+      action: 'submit_vote',
+      is_proxy: true, // ★ これが代理投票であることの目印！
+      mogiten: selections.mogiten, 
+      tenji: selections.tenji, 
+      stage: selections.stage, 
+      academic: selections.academic, 
+      grand_prix: grandPrixObject,
+      votedAt: new Date().toISOString()
+    };
+
+    try {
+      // GASに投票データを送信 (Firestoreへの保存は行わない)
+      await fetch(GAS_API_URL, { 
+        method: 'POST', 
+        mode: 'no-cors', // no-corsモードは変えない
+        body: JSON.stringify(voteDataForGAS) 
+      });
+      console.log('GAS API: 代理投票リクエストを送信しました。');
+
+      // 成功メッセージを表示し、ページをリロードして次の投票に備える
+      alert('代理投票が完了しました！\n「OK」を押すと次の投票ができます。');
+      window.location.reload();
+
+    } catch (error) {
+      console.error('代理投票処理エラー:', error);
+      alert(`投票処理中にエラーが発生しました。\n詳細: ${error.message}`);
+      if(finalVoteBtn) { 
+        finalVoteBtn.disabled = false; 
+        finalVoteBtn.textContent = 'この内容で投票を確定する'; 
+      }
+    }
+  };
     
 }); // DOMContentLoadedの終わり
