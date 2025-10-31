@@ -12,17 +12,19 @@
   
   <script src="main.js" defer></script>
 
-  <!-- ▼▼▼ ここから下を追加 ▼▼▼ -->
+  <!-- ▼▼▼ ここから下の <script> タグ内を丸ごと置き換える ▼▼▼ -->
   <script type="module">
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-    
-    import { getAuth, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+
+    // ★ 認証(Auth)関連のimportをこの1行にまとめる
+    import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
     
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-functions.js";
-    import { getFirestore, doc, getDoc, setDoc ,runTransaction} from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
     
-    // ( ... firebaseConfig は変更なし ... )
+    // ★ Firestore関連のimportをこの1行にまとめる
+    import { getFirestore, doc, getDoc, setDoc, runTransaction, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    
     const firebaseConfig = {
       apiKey: "AIzaSyA3ZZ_T7OGkJ4z2gA9wOjJCGRIwFCewbzQ",
       authDomain: "koudaisai-gp-2025.firebaseapp.com",
@@ -36,37 +38,37 @@
     const app = initializeApp(firebaseConfig);
     const firestore = getFirestore(app);
 
-    // ★★★ 修正箇所 ★★★
-// getAuth から signInAnonymously をインポート
-import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-// getFirestore から collection, addDoc をインポート
-import { getFirestore, doc, getDoc, setDoc, runTransaction, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-
     // グローバルスコープに関数を公開して main.js から使えるようにする
     window.firebaseTools = {
       auth: getAuth(app),
       functions: getFunctions(app, 'asia-northeast1'),
       httpsCallable: httpsCallable,
       signInWithCustomToken: signInWithCustomToken,
-      
       onAuthStateChanged: onAuthStateChanged,
-
-      // ★★★ ここから下を追加 ★★★
-      signInAnonymously: signInAnonymously, // 匿名認証用
-  
+      
+      // ★ 匿名認証とFirestoreへの追加機能
+      signInAnonymously: signInAnonymously,
+      
       runTransaction: runTransaction,
-  
+      
       firestore: firestore,
       doc: doc,
       getDoc: getDoc,
       setDoc: setDoc,
-  
-      collection: collection, // コレクション参照用
-      addDoc: addDoc          // ドキュメント追加用
-      // ★★★ ここまで追加 ★★★
+      collection: collection,
+      addDoc: addDoc
     };
   </script>
-  <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
+  <!-- ▲▲▲ ここまで置き換え ▲▲▲ -->```
+
+**前回ご提案した `main.js` のコードはそのままで問題ありません。**
+
+この `index.html` の修正により、
+1.  `import`が正しく行われ、`'getAuth' has already been declared`エラーが解消します。
+2.  スクリプトが最後まで正常に実行され、`window.firebaseTools`に`signInAnonymously`が正しく設定されます。
+3.  `main.js`が`signInAnonymously`を正常に呼び出せるようになり、2つ目のエラーも解消します。
+
+お手数ですが、こちらに差し替えてから再度、代理投票モード（`?proxy=on`）をお試しいただけますでしょうか。
 </head>
 <body>
 
