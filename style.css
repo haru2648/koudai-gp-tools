@@ -436,7 +436,7 @@ code {
 /* ★ #proxy-login-button のスタイルを個別に指定 */
 #proxy-login-button {
   background-color: var(--main-purple);
-  color: white;
+  color: var(--dark-text);
   border-color: var(--main-purple);
   font-weight: bold;
 }
