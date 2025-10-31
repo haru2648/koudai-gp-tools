@@ -20,16 +20,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const isProxyMode = params.get('proxy') === 'on'; 
 
   if (isProxyMode) {
-    // 【NEW】代理投票モードの場合
-    const password = prompt("運営用のパスワードを入力してください:", "");
-    const correctPassword = "koudai-proxy"; // ★ 運営用の合言葉を設定
-    if (password === correctPassword) {
-      initializeProxyVotingApp(); 
+    // ★★★ 代理投票モードの処理を修正 ★★★
+    // 1. まずlocalStorageに認証済みの記録があるか確認
+    if (localStorage.getItem('proxyAuthSuccess') === 'true') {
+        console.log('代理投票モードの認証情報をlocalStorageで確認しました。パスワード入力をスキップします。');
+        initializeProxyVotingApp();
     } else {
-      if(password !== null) { 
-        alert("パスワードが違います。");
-      }
-      showLoginPage(); 
+        // 2. 記録がなければ、パスワード入力を求める
+        const password = prompt("運営用のパスワードを入力してください:", "");
+        const correctPassword = "grandprix-proxy"; // ★ 運営用の合言葉を設定
+        if (password === correctPassword) {
+            // 3. パスワードが正しければ、localStorageに記録を保存
+            localStorage.setItem('proxyAuthSuccess', 'true');
+            console.log('代理投票のパスワードが一致しました。認証情報をlocalStorageに保存します。');
+            initializeProxyVotingApp();
+        } else {
+            if (password !== null) { // キャンセルボタン以外が押された場合
+                alert("パスワードが違います。");
+            }
+            showLoginPage(); // ログインページ（トップ）に戻す
+        }
     }
   } else if (lineAuthCode) {
     // 【A】LINE認証から戻ってきた場合
@@ -40,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     // 【C】上記以外の場合、Firebaseのログイン状態を監視
     window.firebaseTools.onAuthStateChanged(window.firebaseTools.auth, (user) => {
-      if (user && !user.isAnonymous) { // ★ 匿名ユーザーでないことを確認
+      if (user && !user.isAnonymous) {
         // 【D】既にFirebaseにログイン済みの場合
         console.log('ログイン状態を検知しました。', user.uid);
         initializeVotingApp(); 
@@ -463,6 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('thank-you-message').classList.add('hidden');
     const adminPage = document.getElementById('admin-page');
     if (adminPage) adminPage.classList.remove('hidden');
+
     function setupAdminPageListeners() {
       const adminResetButton = document.getElementById('admin-reset-button');
       const adminTokenInput = document.getElementById('admin-token');
@@ -507,6 +518,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (adminBackButton) {
         adminBackButton.addEventListener('click', () => { window.location.href = './'; });
       }
+      // ★★★ ここから追加 ★★★
+      // 代理投票モードのパスワードリセットボタンのリスナー
+      const adminResetProxyAuthButton = document.getElementById('admin-reset-proxy-auth-button');
+      if (adminResetProxyAuthButton) {
+          adminResetProxyAuthButton.addEventListener('click', () => {
+              if (confirm("本当にこのブラウザの代理投票パスワードの保存情報をリセットしますか？")) {
+                  localStorage.removeItem('proxyAuthSuccess');
+                  alert("代理投票パスワードの保存情報をリセットしました。\n次回代理投票モードでアクセスする際に、パスワードの入力が再度必要になります。");
+              }
+          });
+      }
+      // ★★★ ここまで追加 ★★★
     }
     setupAdminPageListeners();
   }
