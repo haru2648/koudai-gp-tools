@@ -15,21 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === メイン処理：ページの表示を振り分ける ===
   const params = new URLSearchParams(window.location.search);
-  const lineAuthCode = params.get('code'); // URLに 'code' はあるか？
-  const isAdminMode = params.get('admin') === 'on'; // URLに 'admin' はあるか？
-  const isProxyMode = params.get('proxy') === 'on'; // ★ 代理投票モードか？
+  const lineAuthCode = params.get('code'); 
+  const isAdminMode = params.get('admin') === 'on'; 
+  const isProxyMode = params.get('proxy') === 'on'; 
 
   if (isProxyMode) {
     // 【NEW】代理投票モードの場合
     const password = prompt("運営用のパスワードを入力してください:", "");
     const correctPassword = "koudai-proxy"; // ★ 運営用の合言葉を設定
     if (password === correctPassword) {
-      initializeProxyVotingApp(); // パスワードが一致したら代理投票アプリを初期化
+      initializeProxyVotingApp(); 
     } else {
-      if(password !== null) { // キャンセルボタンでなければ
+      if(password !== null) { 
         alert("パスワードが違います。");
       }
-      // ログインページを表示（または何もしない）
       showLoginPage(); 
     }
   } else if (lineAuthCode) {
@@ -41,20 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     // 【C】上記以外の場合、Firebaseのログイン状態を監視
     window.firebaseTools.onAuthStateChanged(window.firebaseTools.auth, (user) => {
-      if (user) {
+      if (user && !user.isAnonymous) { // ★ 匿名ユーザーでないことを確認
         // 【D】既にFirebaseにログイン済みの場合
         console.log('ログイン状態を検知しました。', user.uid);
-        initializeVotingApp(); // 投票アプリを初期化
+        initializeVotingApp(); 
       } else {
-        // 【E】未ログインの場合
+        // 【E】未ログインまたは匿名ユーザーの場合
         console.log('未ログイン状態です。ログインページを表示します。');
-        showLoginPage(); // ログインページを表示
+        showLoginPage(); 
       }
     });
   }
 
   // ==========================================================
-  // === 以下、役割ごとの関数定義 ==============================
+  // === (ここから initializeVotingApp の直前まで変更なし) ======
   // ==========================================================
 
   /**
@@ -109,15 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (statusMessage) statusMessage.textContent = `エラーが発生しました: ${error.message}`;
     });
   }
-
-  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-  // ★★★ ここから下は、共通で使われるヘルパー関数群です ★★★
-  // ★★★ (initializeVotingAppの外に移動しました)       ★★★
-  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
-  /**
-   * カスタム警告を表示する関数
-   */
+  
   const showAlert = (message) => {
     const customAlertMessage = document.getElementById('custom-alert-message');
     const customAlertOverlay = document.getElementById('custom-alert-overlay');
@@ -129,9 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  /**
-   * 配列の要素をランダムにシャッフルする関数
-   */
   const shuffleArray = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -139,9 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  /**
-   * 投票ページの部門別セクション（ボタン）をHTMLに生成する関数
-   */
   function setupVotingPage() {
     const form = document.getElementById('nomination-form');
     if (!form) return;
@@ -168,9 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('部門ボタンの生成完了。');
   }
 
-  /**
-   * モーダルの「開く」ボタンにリスナーを設定する関数
-   */
   function setupOpenModalButtons() {
     const openModalButtons = document.querySelectorAll('.open-modal-btn');
     openModalButtons.forEach(button => {
@@ -181,9 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /**
-   * モーダルの「戻る」「決定」ボタンと「検索欄」のリスナーを設定する関数
-   */
   function setupModalListeners() {
     const backBtn = document.getElementById('modal-back-btn');
     const confirmBtn = document.getElementById('modal-confirm-btn');
@@ -218,9 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /**
-   * メインページのボタン表示を、`selections` の内容に応じて更新する関数
-   */
   function updateButtonState() {
     const openModalButtons = document.querySelectorAll('.open-modal-btn');
     openModalButtons.forEach(btn => {
@@ -230,9 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('ボタンの状態を更新しました。');
   }
 
-  /**
-   * 4部門すべてが選択されたかチェックし、グランプリセクションを表示する関数
-   */
   function checkAndShowGrandPrixSection() {
     const grandPrixList = document.getElementById('grand-prix-list');
     const grandPrixSection = document.getElementById('grand-prix-voting-section');
@@ -249,9 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /**
-   * モーダルを開き、企画リストを生成する関数
-   */
   function openModal(departmentKey) {
     const modalTitle = document.getElementById('modal-title');
     const modalNomineeList = document.getElementById('modal-nominee-list');
@@ -293,21 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log(`モーダル表示 (部門: ${departmentKey})`);
   }
 
-  /**
-   * モーダルを閉じる関数
-   */
   function closeModal() {
     const modalOverlay = document.getElementById('modal-overlay');
     if (modalOverlay) modalOverlay.classList.add('hidden'); console.log('モーダル非表示');
   }
 
-  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-  // ★★★           ヘルパー関数群はここまで             ★★★
-  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
-  /**
-   * ★★★ ログイン成功後に呼び出す、投票アプリ本体の初期化関数 ★★★
-   */
   async function initializeVotingApp() {
     const auth = window.firebaseTools.auth;
     const firestore = window.firebaseTools.firestore;
@@ -322,9 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const userId = currentUser.uid;
 
-    /**
-     * サンクスページの抽選券リスナーを設定する関数
-     */
     function setupThanksPageListeners(userVoteDocRef, initialStatus = 'unused') {
       const lotteryTicket = document.getElementById('lottery-ticket');
       const confirmTitle = document.querySelector('#custom-confirm-box .confirm-title');
@@ -555,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================
-  // === ここから下は代理投票モード用の新しい関数です =========
+  // === ここから下が代理投票モード用の関数（★修正あり★） ======
   // ==========================================================
   
   /**
@@ -563,10 +520,21 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function initializeProxyVotingApp() {
     console.log('代理投票モードで初期化します。');
+    
+    // ★★★ 追加：匿名でFirebaseにログインする ★★★
+    try {
+      await window.firebaseTools.signInAnonymously(window.firebaseTools.auth);
+      console.log('匿名認証に成功しました。');
+    } catch (error) {
+      console.error('匿名認証エラー:', error);
+      alert('認証サーバーへの接続に失敗しました。ページを再読み込みしてください。');
+      return;
+    }
+    // ★★★ ここまで追加 ★★★
+
     document.getElementById('login-container')?.classList.add('hidden');
     document.getElementById('selection-contents').classList.remove('hidden');
     
-    // 共通のヘルパー関数を呼び出す
     setupModalListeners();
     setupProxyFinalVoteButton();
 
@@ -602,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * 【NEW】代理投票データをGASに送信する関数
+   * 【NEW】代理投票データをGASとFirestoreに送信する関数
    */
   const handleProxyVote = async (checkedRadio) => {
     const finalVoteBtn = document.getElementById('final-vote-btn');
@@ -611,8 +579,9 @@ document.addEventListener('DOMContentLoaded', () => {
       finalVoteBtn.textContent = '投票処理中...';
     }
     const grandPrixObject = JSON.parse(checkedRadio.value);
-    const voteDataForGAS = {
-      action: 'submit_vote',
+    
+    // GASとFirestoreに送信する共通のデータを作成
+    const voteData = {
       is_proxy: true,
       mogiten: selections.mogiten,
       tenji: selections.tenji,
@@ -621,15 +590,27 @@ document.addEventListener('DOMContentLoaded', () => {
       grand_prix: grandPrixObject,
       votedAt: new Date().toISOString()
     };
+
     try {
+      // ★★★ 追加：Firestoreへの書き込み処理 ★★★
+      const firestore = window.firebaseTools.firestore;
+      // 'proxyvotes'コレクションへの参照を取得し、データを追加
+      await window.firebaseTools.addDoc(window.firebaseTools.collection(firestore, "proxyvotes"), voteData);
+      console.log('Firestore: 代理投票の記録を保存しました。');
+      // ★★★ ここまで追加 ★★★
+
+      // GASに投票データを送信
+      const gasPayload = { ...voteData, action: 'submit_vote' }; // GAS用にはactionキーを追加
       await fetch(GAS_API_URL, {
         method: 'POST',
         mode: 'no-cors',
-        body: JSON.stringify(voteDataForGAS)
+        body: JSON.stringify(gasPayload)
       });
       console.log('GAS API: 代理投票リクエストを送信しました。');
+
       alert('代理投票が完了しました！\n「OK」を押すと次の投票ができます。');
       window.location.reload();
+
     } catch (error) {
       console.error('代理投票処理エラー:', error);
       alert(`投票処理中にエラーが発生しました。\n詳細: ${error.message}`);

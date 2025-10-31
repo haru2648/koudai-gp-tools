@@ -36,6 +36,12 @@
     const app = initializeApp(firebaseConfig);
     const firestore = getFirestore(app);
 
+    // ★★★ 修正箇所 ★★★
+// getAuth から signInAnonymously をインポート
+import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+// getFirestore から collection, addDoc をインポート
+import { getFirestore, doc, getDoc, setDoc, runTransaction, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
     // グローバルスコープに関数を公開して main.js から使えるようにする
     window.firebaseTools = {
       auth: getAuth(app),
@@ -45,12 +51,19 @@
       
       onAuthStateChanged: onAuthStateChanged,
 
+      // ★★★ ここから下を追加 ★★★
+      signInAnonymously: signInAnonymously, // 匿名認証用
+  
       runTransaction: runTransaction,
-      
+  
       firestore: firestore,
       doc: doc,
       getDoc: getDoc,
-      setDoc: setDoc
+      setDoc: setDoc,
+  
+      collection: collection, // コレクション参照用
+      addDoc: addDoc          // ドキュメント追加用
+      // ★★★ ここまで追加 ★★★
     };
   </script>
   <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
