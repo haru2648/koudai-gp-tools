@@ -394,6 +394,65 @@ code {
   font-family: monospace; 
 }
 
+/* style.css の管理者ページセクションを修正 */
+
+/* ★ #proxy-login-page を追記 */
+#admin-page, #proxy-login-page { 
+  background-color: var(--white-bg); max-width: 700px; margin: 20px auto; 
+  padding: 25px; 
+  border: 1px solid var(--border-color); 
+  border-radius: 8px; line-height: 1.6; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+/* ★ #proxy-login-page h2 を追記 */
+#admin-page h2, #proxy-login-page h2 { 
+  color: var(--main-purple); 
+  border-bottom: 2px solid var(--main-purple); 
+  padding-bottom: 10px; margin-bottom: 20px; 
+  font-family: var(--font-body); font-weight: bold;
+  font-size: 1.5em; 
+}
+#admin-page h3 { 
+  margin-top: 25px; 
+  border-left: 4px solid var(--main-purple); 
+  padding-left: 10px; 
+  font-family: var(--font-body); font-weight: bold;
+  font-size: 1.2em; 
+  margin-bottom: 10px; 
+}
+/* ★ #proxy-login-page button, #proxy-login-page input を追記 */
+#admin-page button, #proxy-login-page button,
+#admin-page input[type="password"], #proxy-login-page input[type="password"] { 
+  padding: 8px 15px; font-size: 14px; border: 1px solid var(--border-color); 
+  border-radius: 5px; cursor: pointer; margin: 5px; vertical-align: middle; 
+  background-color: #fff; 
+  transition: background-color 0.2s;
+}
+/* ★ #proxy-login-page button:hover を追記 */
+#admin-page button:hover, #proxy-login-page button:hover {
+  background-color: var(--button-hover-light);
+}
+
+/* ★ #proxy-login-button のスタイルを個別に指定 */
+#proxy-login-button {
+  background-color: var(--main-purple);
+  color: white;
+  border-color: var(--main-purple);
+  font-weight: bold;
+}
+#proxy-login-button:hover {
+  background-color: #613d85;
+  border-color: #613d85;
+}
+
+/* ★ 戻るボタンのスタイルをadminと共通化 */
+#admin-back-button, #proxy-back-button { 
+  background-color: #eee; margin-top: 20px; 
+}
+#admin-back-button:hover, #proxy-back-button:hover { 
+  background-color: #ddd; 
+}
+
 
 /* === LINE Login Button === */
 .line-login-btn {

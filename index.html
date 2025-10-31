@@ -139,6 +139,22 @@
       </p>
     </main>
   </div>
+
+    <!-- ▼▼▼ ここから代理投票ログイン用のパネルを追加 ▼▼▼ -->
+  <div id="proxy-login-page" class="hidden">
+    <h2>代理投票モード</h2>
+    <p>
+      運営用のパスワードを入力してください。
+    </p>
+    <div>
+        <label for="proxy-password-input">パスワード: </label>
+        <input type="password" id="proxy-password-input" size="15">
+        <button id="proxy-login-button">認証</button>
+    </div>
+    <p id="proxy-error-message" style="color: red; height: 1.2em; margin-top: 10px;"></p>
+    <button id="proxy-back-button">通常ページへ戻る</button>
+  </div>
+  <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
   
   <div id="admin-page" class="hidden">
     <h2>管理者設定パネル</h2>

@@ -21,25 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (isProxyMode) {
     // ★★★ 代理投票モードの処理を修正 ★★★
-    // 1. まずlocalStorageに認証済みの記録があるか確認
     if (localStorage.getItem('proxyAuthSuccess') === 'true') {
-        console.log('代理投票モードの認証情報をlocalStorageで確認しました。パスワード入力をスキップします。');
+        console.log('代理投票モードの認証情報をlocalStorageで確認しました。');
         initializeProxyVotingApp();
     } else {
-        // 2. 記録がなければ、パスワード入力を求める
-        const password = prompt("運営用のパスワードを入力してください:", "");
-        const correctPassword = "grandprix-proxy"; // ★ 運営用の合言葉を設定
-        if (password === correctPassword) {
-            // 3. パスワードが正しければ、localStorageに記録を保存
-            localStorage.setItem('proxyAuthSuccess', 'true');
-            console.log('代理投票のパスワードが一致しました。認証情報をlocalStorageに保存します。');
-            initializeProxyVotingApp();
-        } else {
-            if (password !== null) { // キャンセルボタン以外が押された場合
-                alert("パスワードが違います。");
-            }
-            showLoginPage(); // ログインページ（トップ）に戻す
-        }
+        // 認証情報がなければ、専用のログインページを表示
+        showProxyLoginPage();
     }
   } else if (lineAuthCode) {
     // 【A】LINE認証から戻ってきた場合
@@ -51,11 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 【C】上記以外の場合、Firebaseのログイン状態を監視
     window.firebaseTools.onAuthStateChanged(window.firebaseTools.auth, (user) => {
       if (user && !user.isAnonymous) {
-        // 【D】既にFirebaseにログイン済みの場合
         console.log('ログイン状態を検知しました。', user.uid);
         initializeVotingApp(); 
       } else {
-        // 【E】未ログインまたは匿名ユーザーの場合
         console.log('未ログイン状態です。ログインページを表示します。');
         showLoginPage(); 
       }
@@ -119,6 +104,56 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+    /**
+   * 【NEW】代理投票用のパスワード入力ページを表示・設定する
+   */
+  function showProxyLoginPage() {
+      // 全てのメインパネルを隠す
+      document.getElementById('login-container')?.classList.add('hidden');
+      document.getElementById('selection-contents')?.classList.add('hidden');
+      document.getElementById('thank-you-message')?.classList.add('hidden');
+      document.getElementById('admin-page')?.classList.add('hidden');
+      // 代理投票ログインパネルだけを表示
+      const proxyLoginPage = document.getElementById('proxy-login-page');
+      if(proxyLoginPage) proxyLoginPage.classList.remove('hidden');
+
+      // --- イベントリスナーを設定 ---
+      const passwordInput = document.getElementById('proxy-password-input');
+      const loginButton = document.getElementById('proxy-login-button');
+      const backButton = document.getElementById('proxy-back-button');
+      const errorMessage = document.getElementById('proxy-error-message');
+
+      // 認証ボタンがクリックされたときの処理
+      if (loginButton && passwordInput && errorMessage) {
+          loginButton.addEventListener('click', () => {
+              const correctPassword = "koudai-proxy";
+              if (passwordInput.value === correctPassword) {
+                  localStorage.setItem('proxyAuthSuccess', 'true');
+                  console.log('代理投票のパスワードが一致しました。');
+                  initializeProxyVotingApp();
+              } else {
+                  errorMessage.textContent = 'パスワードが違います。';
+                  passwordInput.value = '';
+                  passwordInput.focus();
+              }
+          });
+          // Enterキーでも認証できるようにする
+          passwordInput.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                  loginButton.click();
+              }
+          });
+      }
+      
+      // 戻るボタンがクリックされたときの処理
+      if (backButton) {
+          backButton.addEventListener('click', () => {
+              // URLから ?proxy=on を取り除いてトップページに移動
+              window.location.href = window.location.pathname;
+          });
+      }
+  }
+
   const showAlert = (message) => {
     const customAlertMessage = document.getElementById('custom-alert-message');
     const customAlertOverlay = document.getElementById('custom-alert-overlay');
