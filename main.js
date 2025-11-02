@@ -10,6 +10,32 @@ let allNomineesData = {};
 let currentDepartment = null;
 const selections = { mogiten: null, tenji: null, stage: null, academic: null };
 
+/**
+ * JST（日本標準時）のISO 8601形式に近い文字列を生成する関数
+ * @returns {string} 例: "2025-11-02T15:30:00+09:00"
+ */
+function getJstIsoString() {
+  const date = new Date();
+  const options = {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false // 24時間表記
+  };
+
+  // 'sv-SE' (スウェーデン) ロケールは 'YYYY-MM-DD HH:mm:ss' という形式を生成するため、整形しやすい
+  const formatter = new Intl.DateTimeFormat('sv-SE', options);
+  const formattedDate = formatter.format(date); // 例: "2025-11-02 15:30:00"
+
+  // Tで区切り、タイムゾーン情報を付加してISO形式に近づける
+  return formattedDate.replace(' ', 'T') + '+09:00';
+}
+// ▲▲▲ ここまで追加 ▲▲▲
+
 // HTMLドキュメントがすべて読み込まれたら実行
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -383,8 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const userId = window.firebaseTools.auth.currentUser.uid;
       if (finalVoteBtn) { finalVoteBtn.disabled = true; finalVoteBtn.textContent = '投票処理中...'; }
       const grandPrixObject = JSON.parse(checkedRadio.value);
-      const voteDataForGAS = { action: 'submit_vote', mogiten: selections.mogiten, tenji: selections.tenji, stage: selections.stage, academic: selections.academic, grand_prix: grandPrixObject, votedAt: new Date().toISOString() };
-      const voteDataForFirestore = { vote: voteDataForGAS, hasVoted: true, lotteryUsed: false, votedAt: voteDataForGAS.votedAt, userId: userId };
+      const jstVotedAt = getJstIsoString(); // ★JST時刻を取得
+      const voteDataForGAS = { action: 'submit_vote', mogiten: selections.mogiten, tenji: selections.tenji, stage: selections.stage, academic: selections.academic, grand_prix: grandPrixObject, votedAt: jstVotedAt }; // ★変更
+      const voteDataForFirestore = { vote: voteDataForGAS, hasVoted: true, lotteryUsed: false, votedAt: jstVotedAt, userId: userId }; // ★変更
       try {
         if (isDebugMode) {
           console.log('デバッグモード: Firestoreへの書き込みをスキップしました。');
@@ -646,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
       stage: selections.stage,
       academic: selections.academic,
       grand_prix: grandPrixObject,
-      votedAt: new Date().toISOString()
+      votedAt: getJstIsoString() // ★変更
     };
 
     try {
