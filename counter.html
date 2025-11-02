@@ -9,6 +9,7 @@
         :root {
             --main-purple: #76499F;
             --light-purple: #E7CBFF;
+            --accent-orange: #f5a623;
         }
         body {
             font-family: 'Noto Sans JP', sans-serif;
@@ -27,7 +28,7 @@
             background-color: white;
             border-radius: 12px;
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-            min-width: 300px;
+            min-width: 320px;
         }
         #counter-title {
             font-size: 1.8em;
@@ -43,23 +44,43 @@
             color: #333;
             line-height: 1;
         }
-        #incrementButton {
-            padding: 15px 40px;
-            font-size: 1.2rem;
+        .button-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* ボタンの間の隙間 */
+        }
+        .counter-btn {
+            width: 120px;
+            padding: 15px 20px;
+            font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
             border: none;
-            background-color: var(--main-purple);
-            color: white;
             border-radius: 8px;
             transition: background-color 0.3s, transform 0.1s;
+        }
+        .counter-btn:active {
+            transform: scale(0.98);
+        }
+        #incrementButton {
+            background-color: var(--main-purple);
+            color: white;
         }
         #incrementButton:hover {
             background-color: #613d85;
         }
-        #incrementButton:active {
-            transform: scale(0.98);
+        #decrementButton {
+            background-color: var(--accent-orange);
+            color: white;
         }
+        #decrementButton:hover {
+            background-color: #d48e1c;
+        }
+        #decrementButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
         .error-message {
             color: #d90000;
             font-weight: bold;
@@ -71,13 +92,16 @@
     <div class="container">
         <h1 id="counter-title">...</h1>
         <div id="counter">0</div>
-        <button id="incrementButton">カウントアップ</button>
+        <!-- ボタンをまとめるラッパーを追加 -->
+        <div class="button-wrapper">
+            <button id="decrementButton" class="counter-btn">-1</button>
+            <button id="incrementButton" class="counter-btn">+1</button>
+        </div>
     </div>
 
     <!-- Firebase SDK の読み込み (v9 modular) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        // Realtime Databaseに必要な機能をインポート
         import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         // ▼▼▼▼▼ ここはあなたの既存のFirebaseプロジェクト設定に書き換えてください ▼▼▼▼▼
@@ -85,8 +109,7 @@
           apiKey: "AIzaSyA3ZZ_T7OGkJ4z2gA9wOjJCGRIwFCewbzQ",
           authDomain: "koudaisai-gp-2025.firebaseapp.com",
           projectId: "koudaisai-gp-2025",
-          // Realtime Databaseを使う場合、databaseURLの指定が推奨されます
-          databaseURL: "https://koudaisai-gp-2025-default-rtdb.firebaseio.com/", // ★ あなたのRealtime DatabaseのURLに書き換え
+          databaseURL: "https://koudaisai-gp-2025-default-rtdb.firebaseio.com",
           storageBucket: "koudaisai-gp-2025.firebasestorage.app",
           messagingSenderId: "821603922081",
           appId: "1:821603922081:web:3697ea3356f6bcf689c0e0"
@@ -100,39 +123,53 @@
 
         const titleElement = document.getElementById('counter-title');
         const counterElement = document.getElementById('counter');
-        const buttonElement = document.getElementById('incrementButton');
+        const incrementButton = document.getElementById('incrementButton');
+        const decrementButton = document.getElementById('decrementButton'); // マイナスボタンを取得
+        const buttonWrapper = document.querySelector('.button-wrapper');
 
-        // 1. URLからカウンターのIDを取得
         const params = new URLSearchParams(window.location.search);
         const counterId = params.get('id');
 
-        // 2. IDが指定されていない場合はエラー表示
         if (!counterId) {
             titleElement.textContent = 'エラー';
             counterElement.innerHTML = '<span class="error-message">カウンターIDが指定されていません。<br>URLの末尾に ?id=名前 の形式で指定してください。</span>';
             counterElement.style.fontSize = "1rem";
-            buttonElement.style.display = 'none';
+            buttonWrapper.style.display = 'none';
         } else {
             titleElement.textContent = `${counterId}`;
             
-            // 3. データベース内の操作したい場所（パス）を指定
             const counterRef = ref(database, 'counters/' + counterId);
 
-            // 4. データベースの値が変更されたら、画面を更新
+            // データベースの値が変更されたら、画面を更新
             onValue(counterRef, (snapshot) => {
                 const data = snapshot.val();
                 const count = data ? data.count : 0;
                 counterElement.textContent = count;
+
+                // カウントが0以下ならマイナスボタンを無効化
+                decrementButton.disabled = count <= 0;
             });
 
-            // 5. ボタンが押されたら、安全に値を+1する
-            buttonElement.addEventListener('click', () => {
+            // プラスボタンが押されたら、安全に値を+1する
+            incrementButton.addEventListener('click', () => {
                 runTransaction(counterRef, (currentData) => {
                     if (currentData === null) {
-                        return { count: 1 }; // データがなければ1で初期化
+                        return { count: 1 };
                     } else {
-                        return { count: currentData.count + 1 }; // あれば+1
+                        return { count: currentData.count + 1 };
                     }
+                });
+            });
+
+            // ★★★ マイナスボタンが押されたときの処理を追加 ★★★
+            decrementButton.addEventListener('click', () => {
+                runTransaction(counterRef, (currentData) => {
+                    // データが存在し、かつカウントが0より大きい場合のみ処理
+                    if (currentData && currentData.count > 0) {
+                        return { count: currentData.count - 1 };
+                    }
+                    // そうでなければ何もしない（トランザクションを中断）
+                    return;
                 });
             });
         }
