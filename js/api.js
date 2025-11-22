@@ -1,8 +1,17 @@
 /**
- * API関連の関数
+ * API interactions
  */
 import { GAS_API_URL } from './config.js';
-import { firestore, doc, runTransaction, addDoc, collection } from './firebase-client.js';
+import {
+    firestore,
+    doc,
+    runTransaction,
+    addDoc,
+    collection,
+    getDocs,
+    query,
+    getDoc
+} from './firebase-client.js';
 
 /**
  * JST（日本標準時）のISO 8601形式に近い文字列を生成する関数
@@ -30,15 +39,70 @@ export function getJstIsoString() {
 }
 
 /**
- * 企画データを取得する
- * @returns {Promise<Object>} 企画データのオブジェクト
+ * data.jsonから企画データを取得する (Migration用)
+ * @returns {Promise<Object>}
  */
-export async function fetchNomineesData() {
-    const response = await fetch('./data.json');
-    if (!response.ok) {
-        throw new Error(`ネットワークエラー: ${response.status} ${response.statusText}`);
+export async function fetchNomineesFromJSON() {
+    try {
+        const response = await fetch('data.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching data.json:', error);
+        throw error;
     }
-    return await response.json();
+}
+
+/**
+ * Firestoreから企画データを取得する
+ * @returns {Promise<Object>} 部門ごとの企画データ { mogiten: [...], ... }
+ */
+export async function fetchNomineesFromFirestore() {
+    try {
+        const q = query(collection(firestore, 'nominees'));
+        const querySnapshot = await getDocs(q);
+        const nominees = {
+            mogiten: [],
+            tenji: [],
+            stage: [],
+            academic: []
+        };
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            data.id = doc.id; // FirestoreのドキュメントIDを含める
+            if (nominees[data.department]) {
+                nominees[data.department].push(data);
+            }
+        });
+
+        return nominees;
+    } catch (error) {
+        console.error('Error fetching nominees from Firestore:', error);
+        throw error;
+    }
+}
+
+/**
+ * UIテキスト設定を取得する
+ * @returns {Promise<Object>} UIテキスト設定オブジェクト
+ */
+export async function fetchUiText() {
+    try {
+        const docRef = doc(firestore, 'system_config', 'ui_text');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return docSnap.data();
+        } else {
+            console.log('UI Text config not found. Using defaults.');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error fetching UI text:', error);
+        throw error;
+    }
 }
 
 /**

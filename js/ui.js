@@ -127,3 +127,23 @@ export function closeModal() {
     const modalOverlay = document.getElementById('modal-overlay');
     if (modalOverlay) modalOverlay.classList.add('hidden');
 }
+
+/**
+ * UIテキストを更新する
+ * @param {Object} textData 
+ */
+export function updateUiText(textData) {
+    if (!textData) return;
+
+    if (textData.pageTitle) {
+        document.title = textData.pageTitle;
+        document.querySelectorAll('header h1').forEach(el => el.textContent = textData.pageTitle);
+    }
+
+    if (textData.description) {
+        const descEl = document.querySelector('.description');
+        if (descEl) descEl.textContent = textData.description;
+    }
+
+    // 必要に応じて他のフィールドも追加
+}
