@@ -120,3 +120,10 @@ export function showProxyLoginPage() {
     document.getElementById('admin-page')?.classList.add('hidden');
     document.getElementById('proxy-login-page')?.classList.remove('hidden');
 }
+/**
+ * モーダルを閉じる
+ */
+export function closeModal() {
+    const modalOverlay = document.getElementById('modal-overlay');
+    if (modalOverlay) modalOverlay.classList.add('hidden');
+}

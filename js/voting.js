@@ -3,7 +3,7 @@
  */
 import { doc, getDoc, setDoc, firestore } from './firebase-client.js';
 import { fetchNomineesData, submitVote } from './api.js';
-import { showVotingPage, showThanksPage, showAlert, showConfirm, openModal as uiOpenModal, closeModal } from './ui.js';
+import { showVotingPage, showThanksPage, showAlert, showConfirm, closeModal } from './ui.js';
 
 // --- 状態変数 ---
 let allNomineesData = {};
