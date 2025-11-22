@@ -1,93 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>工大祭2025</title>
 
-  <!-- ▼▼▼ この行を追加 ▼▼▼ -->
   <link rel="icon" href="images/favicon.svg">
-  
   <link rel="stylesheet" href="style.css">
-  
-  <script src="main.js" defer></script>
 
-  <!-- ▼▼▼ ここから下の <script> タグ内を丸ごと置き換える ▼▼▼ -->
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-
-    // ★ 認証(Auth)関連のimportをこの1行にまとめる
-    import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-    
-    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-functions.js";
-    
-    // ★ Firestore関連のimportをこの1行にまとめる
-    import { getFirestore, doc, getDoc, setDoc, runTransaction, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-    
-    const firebaseConfig = {
-      apiKey: "AIzaSyA3ZZ_T7OGkJ4z2gA9wOjJCGRIwFCewbzQ",
-      authDomain: "koudaisai-gp-2025.firebaseapp.com",
-      projectId: "koudaisai-gp-2025",
-      storageBucket: "koudaisai-gp-2025.firebasestorage.app",
-      messagingSenderId: "821603922081",
-      appId: "1:821603922081:web:3697ea3356f6bcf689c0e0"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const firestore = getFirestore(app);
-
-    // グローバルスコープに関数を公開して main.js から使えるようにする
-    window.firebaseTools = {
-      auth: getAuth(app),
-      functions: getFunctions(app, 'asia-northeast1'),
-      httpsCallable: httpsCallable,
-      signInWithCustomToken: signInWithCustomToken,
-      onAuthStateChanged: onAuthStateChanged,
-      
-      // ★ 匿名認証とFirestoreへの追加機能
-      signInAnonymously: signInAnonymously,
-      
-      runTransaction: runTransaction,
-      
-      firestore: firestore,
-      doc: doc,
-      getDoc: getDoc,
-      setDoc: setDoc,
-      collection: collection,
-      addDoc: addDoc
-    };
-  </script>
-  <!-- ▲▲▲ ここまで置き換え ▲▲▲ -->
+  <!-- メインのJavaScriptファイルをモジュールとして読み込む -->
+  <script type="module" src="main.js"></script>
 </head>
+
 <body>
 
-  <!-- ▼▼▼ ここから下を追加 ▼▼▼ -->
   <div id="login-container">
     <header>
       <h1>工大祭グランプリ２０２５</h1>
       <img src="images/header-separator.svg" alt="区切り線" class="header-separator">
     </header>
     <main style="text-align: center; padding: 30px;">
-        <p style="font-size: 1.2em; font-weight: bold; margin-bottom: 25px;">
-公平な投票のため、LINEログイン（お一人様一回）にご協力ください。
+      <p style="font-size: 1.2em; font-weight: bold; margin-bottom: 25px;">
+        公平な投票のため、LINEログイン（お一人様一回）にご協力ください。
 
-取得するプロフィール情報は、投票済みかどうかの確認（本人確認）にのみ利用します。</p>
-        <a id="line-login-button" href="#" class="line-login-btn">LINEでログイン</a>
-        <p id="login-status-message" style="margin-top: 20px;"></p>
+        取得するプロフィール情報は、投票済みかどうかの確認（本人確認）にのみ利用します。</p>
+      <a id="line-login-button" href="#" class="line-login-btn">LINEでログイン</a>
+      <p id="login-status-message" style="margin-top: 20px;"></p>
     </main>
   </div>
-  <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
 
   <div id="selection-contents" class="hidden">
     <header>
       <h1>工大祭グランプリ２０２５</h1>
-
-    <!-- ▼▼▼ この行を追加 ▼▼▼ -->
-    <img src="images/header-separator.svg" alt="区切り線" class="header-separator">
-
-
+      <img src="images/header-separator.svg" alt="区切り線" class="header-separator">
       <p class="description">
         工大祭グランプリ2025とは、ご来場いただいた方々に気に入った企画に投票していただき、工大祭2025の人気企画を決める一大イベントです。<br>
         投票していただいた方には附属図書館付近のテントにて<span class="highlight">ハズレなしのガラガラ抽選</span>にご参加いただけます。<br>
@@ -97,9 +43,11 @@
     <main>
       <form id="nomination-form">
         <p id="loading-message">企画データを読み込み中です...</p>
-        
+
         <section id="grand-prix-voting-section" class="department-section hidden">
-          <div class="department-header"><h2>ベストオブ工大祭</h2></div>
+          <div class="department-header">
+            <h2>ベストオブ工大祭</h2>
+          </div>
           <div id="grand-prix-list" class="nominee-list-gp">
           </div>
         </section>
@@ -107,31 +55,31 @@
         <div id="final-vote-btn-container" class="hidden">
           <button type="button" id="final-vote-btn">この内容で投票を確定する</button>
         </div>
-        
-      </form> 
+
+      </form>
     </main>
   </div>
-  
+
   <div id="thank-you-message" class="hidden">
     <header>
       <h1>工大祭グランプリ２０２５</h1>
     </header>
     <main class="thanks-main">
-       <div class="thanks-title-container">
+      <div class="thanks-title-container">
         <h2>ご投票ありがとうございました！</h2>
       </div>
       <p class="thanks-description">
         結果発表は工大祭2日目(11/3(月・祝))16:40から野外ステージにて行います。こちらも是非ご覧ください。<br><br>
         また、投票していただいた方には附属図書館付近のテントにてハズレなしのガラガラ抽選にご参加いただけます。
       </p>
-      
+
       <div id="lottery-ticket" class="lottery-ticket">
         <div class="ticket-body">
           <p class="ticket-title">ガラガラ抽選券</p>
           <p class="ticket-status">（未使用）</p>
         </div>
         <div class="ticket-stub">
-          </div>
+        </div>
       </div>
       <p class="ticket-note">
         ※係員にこの画面を見せてください。<br>
@@ -140,22 +88,20 @@
     </main>
   </div>
 
-    <!-- ▼▼▼ ここから代理投票ログイン用のパネルを追加 ▼▼▼ -->
   <div id="proxy-login-page" class="hidden">
     <h2>代理投票モード</h2>
     <p>
       運営用のパスワードを入力してください。
     </p>
     <div>
-        <label for="proxy-password-input">パスワード: </label>
-        <input type="password" id="proxy-password-input" size="15">
-        <button id="proxy-login-button">認証</button>
+      <label for="proxy-password-input">パスワード: </label>
+      <input type="password" id="proxy-password-input" size="15">
+      <button id="proxy-login-button">認証</button>
     </div>
     <p id="proxy-error-message" style="color: red; height: 1.2em; margin-top: 10px;"></p>
     <button id="proxy-back-button">通常ページへ戻る</button>
   </div>
-  <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
-  
+
   <div id="admin-page" class="hidden">
     <h2>管理者設定パネル</h2>
     <p>
@@ -167,9 +113,9 @@
       ⚠ 一度削除したデータは元に戻せません！
     </p>
     <div>
-        <label for="admin-token">リセットトークン: </label>
-        <input type="password" id="admin-token" size="15">
-        <button id="admin-reset-button">全投票データをリセット</button>
+      <label for="admin-token">リセットトークン: </label>
+      <input type="password" id="admin-token" size="15">
+      <button id="admin-reset-button">全投票データをリセット</button>
     </div>
     <hr style="margin: 20px 0;">
     <h3>ブラウザ状態リセット（テスト用）</h3>
@@ -179,19 +125,16 @@
       テスト目的で、管理者自身のブラウザで再度投票や抽選券の動作を確認したい場合に使用してください。
     </p>
     <button id="admin-reset-local-button">このブラウザの投票/抽選券状態をリセット</button>
-    <hr style="margin: 20px 0;"> 
+    <hr style="margin: 20px 0;">
 
-    <!-- ▼▼▼ ここから追記 ▼▼▼ -->
     <h3>代理投票モード管理</h3>
     <p>
       代理投票モードで一度入力したパスワードは、ブラウザに保存され、次回から入力を省略できます。<br>
       このボタンを押すと、その保存されたパスワード情報を削除し、次回アクセス時に再度パスワードの入力が必要な状態に戻します。
     </p>
     <button id="admin-reset-proxy-auth-button">代理投票パスワードをリセット</button>
-    <!-- ▲▲▲ ここまで追記 ▲▲▲ -->
 
-    <hr style="margin: 20px 0;"> 
-
+    <hr style="margin: 20px 0;">
 
     <h3>デバッグモード</h3>
     <p>
@@ -201,7 +144,7 @@
     <p id="debug-status">デバッグモード: 無効</p>
     <button id="admin-back-button">投票ページへ戻る</button>
   </div>
-  
+
   <div id="modal-overlay" class="hidden">
     <div id="modal-content">
       <h3 id="modal-title">部門名</h3>
@@ -210,16 +153,16 @@
         <input type="search" id="modal-search-input" placeholder="企画名・団体名で検索...">
       </div>
       <div id="modal-nominee-list">
-        </div>
+      </div>
       <div class="modal-buttons">
         <button type="button" id="modal-back-btn">戻る</button>
         <button type="button" id="modal-confirm-btn">これで決定</button>
       </div>
     </div>
   </div>
-  
+
   <div id="custom-confirm-overlay" class="hidden">
-     <div id="custom-confirm-box">
+    <div id="custom-confirm-box">
       <p class="confirm-title">投票の確認</p>
       <p class="confirm-message">この内容で投票を確定します。<br>よろしいですか？</p>
       <div class="confirm-buttons">
@@ -228,7 +171,7 @@
       </div>
     </div>
   </div>
-  
+
   <div id="custom-alert-overlay" class="hidden">
     <div id="custom-alert-box">
       <p id="custom-alert-message">警告メッセージがここに表示されます。</p>
@@ -238,5 +181,6 @@
     </div>
   </div>
 
-  </body>
+</body>
+
 </html>
