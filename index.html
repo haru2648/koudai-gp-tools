@@ -4,12 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>工大祭2025</title>
-
-  <link rel="icon" href="images/favicon.svg">
+  <title>工大祭グランプリ2025</title>
   <link rel="stylesheet" href="style.css">
-
-  <!-- メインのJavaScriptファイルをモジュールとして読み込む -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Yomogi&display=swap"
+    rel="stylesheet">
   <script type="module" src="main.js"></script>
 </head>
 
@@ -97,6 +98,7 @@
     <div class="admin-tabs">
       <button class="admin-tab-btn active" data-tab="system">システム管理</button>
       <button class="admin-tab-btn" data-tab="content">コンテンツ管理</button>
+      <button class="admin-tab-btn" data-tab="theme">テーマ設定</button>
     </div>
 
     <!-- システム管理タブ -->
@@ -168,6 +170,79 @@
       </div>
       <div id="cms-nominee-list" class="cms-list">
         <!-- リストはJSで生成 -->
+      </div>
+    </div>
+
+    <!-- テーマ設定タブ -->
+    <div id="admin-tab-theme" class="admin-tab-content hidden">
+      <h3>テーマカラー設定</h3>
+      <p>アプリ全体の配色をカスタマイズできます。</p>
+
+      <div class="cms-form-group">
+        <label>メインカラー (ヘッダー、ボタン等)</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="color" id="theme-main-color" value="#76499F">
+          <span id="theme-main-color-val">#76499F</span>
+        </div>
+      </div>
+
+      <div class="cms-form-group">
+        <label>アクセントカラー (薄い紫、選択状態等)</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="color" id="theme-accent-color" value="#E7CBFF">
+          <span id="theme-accent-color-val">#E7CBFF</span>
+        </div>
+      </div>
+
+      <div class="cms-form-group">
+        <label>背景色</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="color" id="theme-bg-color" value="#ffffff">
+          <span id="theme-bg-color-val">#ffffff</span>
+        </div>
+      </div>
+
+      <div class="cms-form-group">
+        <label>テキスト色</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="color" id="theme-text-color" value="#333333">
+          <span id="theme-text-color-val">#333333</span>
+        </div>
+      </div>
+
+      <hr style="margin: 20px 0;">
+
+      <div class="cms-form-group">
+        <label>フォント設定</label>
+        <select id="theme-font-family" class="cms-input">
+          <option value="">標準 (ゴシック)</option>
+          <option value="serif">明朝体 (Noto Serif JP)</option>
+          <option value="handwritten">手書き風 (Yomogi)</option>
+        </select>
+      </div>
+
+      <div class="cms-form-group">
+        <label>背景画像URL</label>
+        <input type="text" id="theme-bg-image" class="cms-input" placeholder="https://example.com/bg.jpg">
+      </div>
+
+      <div class="cms-form-group">
+        <label>企画一覧レイアウト</label>
+        <div style="margin-top: 5px;">
+          <label style="margin-right: 15px;">
+            <input type="radio" name="theme-layout" value="list" checked> リスト形式
+          </label>
+          <label>
+            <input type="radio" name="theme-layout" value="grid"> グリッド形式
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button id="theme-save-btn"
+          style="background-color: var(--main-purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">テーマを保存</button>
+        <button id="theme-reset-btn"
+          style="background-color: #eee; color: #333; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-left: 10px;">デフォルトに戻す</button>
       </div>
     </div>
 

@@ -3,7 +3,7 @@
  */
 import { PROXY_PASSWORD } from './config.js';
 import { loginAnonymously } from './auth.js';
-import { fetchNomineesData, submitProxyVote } from './api.js';
+import { fetchNomineesFromFirestore, submitProxyVote } from './api.js';
 import { showProxyLoginPage, showVotingPage, showAlert } from './ui.js';
 
 // --- 状態変数 ---
@@ -25,7 +25,7 @@ export function initializeProxyMode() {
 }
 
 function setupProxyLoginListeners() {
-    const passwordInput = document.getElementById('proxy-password-input');
+    const passwordInput = document.getElementById('proxy-password');
     const loginButton = document.getElementById('proxy-login-button');
     const backButton = document.getElementById('proxy-back-button');
     const errorMessage = document.getElementById('proxy-error-message');
@@ -75,7 +75,7 @@ async function startProxyVotingApp() {
     setupProxyFinalVoteButton();
 
     try {
-        allNomineesData = await fetchNomineesData();
+        allNomineesData = await fetchNomineesFromFirestore();
         console.log('企画データを読み込みました:', allNomineesData);
         renderVotingPage();
     } catch (error) {

@@ -100,3 +100,40 @@ export async function migrateDataToFirestore(jsonData) {
         throw error;
     }
 }
+
+// --- Theme Management ---
+
+/**
+ * テーマ設定を保存する
+ * @param {Object} themeSettings テーマ設定オブジェクト
+ */
+export async function saveThemeSettings(themeSettings) {
+    try {
+        const docRef = doc(firestore, 'system_config', 'theme');
+        await setDoc(docRef, themeSettings, { merge: true });
+        console.log('Theme settings saved successfully.');
+    } catch (error) {
+        console.error('Error saving theme settings:', error);
+        throw error;
+    }
+}
+
+/**
+ * テーマ設定を取得する
+ * @returns {Promise<Object>} テーマ設定オブジェクト
+ */
+export async function fetchThemeSettings() {
+    try {
+        const docRef = doc(firestore, 'system_config', 'theme');
+        const docSnap = await import('./firebase-client.js').then(m => m.getDoc(docRef));
+
+        if (docSnap.exists()) {
+            return docSnap.data();
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error('Error fetching theme settings:', error);
+        return null;
+    }
+}

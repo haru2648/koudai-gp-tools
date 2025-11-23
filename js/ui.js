@@ -147,3 +147,57 @@ export function updateUiText(textData) {
 
     // 必要に応じて他のフィールドも追加
 }
+
+/**
+ * テーマ設定を適用する
+ * @param {Object} themeSettings 
+ */
+export function applyTheme(themeSettings) {
+    if (!themeSettings) return;
+
+    const root = document.documentElement;
+
+    if (themeSettings.mainColor) {
+        root.style.setProperty('--main-purple', themeSettings.mainColor);
+    }
+    if (themeSettings.accentColor) {
+        root.style.setProperty('--light-purple', themeSettings.accentColor);
+    }
+    if (themeSettings.backgroundColor) {
+        root.style.setProperty('--white-bg', themeSettings.backgroundColor);
+        // 背景色が変更された場合、bodyの背景色も明示的に設定する必要があるかもしれないが、
+        // style.cssで body { background-color: var(--white-bg); } となっていれば自動反映される。
+    }
+    if (themeSettings.textColor) {
+        root.style.setProperty('--dark-text', themeSettings.textColor);
+    }
+
+    // フォント設定
+    document.body.classList.remove('font-serif', 'font-handwritten');
+    if (themeSettings.fontFamily) {
+        if (themeSettings.fontFamily === 'serif') {
+            document.body.classList.add('font-serif');
+        } else if (themeSettings.fontFamily === 'handwritten') {
+            document.body.classList.add('font-handwritten');
+        }
+    }
+
+    // 背景画像設定
+    if (themeSettings.backgroundImageUrl) {
+        document.body.style.backgroundImage = `url('${themeSettings.backgroundImageUrl}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+    } else {
+        document.body.style.backgroundImage = 'none';
+    }
+
+    // レイアウト設定
+    const listContainer = document.getElementById('grand-prix-list');
+    if (listContainer) {
+        listContainer.classList.remove('layout-grid');
+        if (themeSettings.layoutType === 'grid') {
+            listContainer.classList.add('layout-grid');
+        }
+    }
+}

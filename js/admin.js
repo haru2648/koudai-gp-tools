@@ -4,7 +4,7 @@
 import { doc, setDoc, firestore, deleteDoc, collection, getDocs } from './firebase-client.js';
 import { ADMIN_RESET_TOKEN } from './config.js';
 import { showAlert, showConfirm } from './ui.js';
-import { fetchNomineesData } from './api.js';
+import { fetchNomineesFromJSON } from './api.js';
 import {
     migrateDataToFirestore,
     fetchUiText,
@@ -12,7 +12,9 @@ import {
     fetchNomineesFromFirestore,
     addNominee,
     updateNominee,
-    deleteNominee
+    deleteNominee,
+    saveThemeSettings,
+    fetchThemeSettings
 } from './cms.js';
 
 /**
@@ -121,7 +123,7 @@ function setupCmsListeners() {
         migrateBtn.onclick = async () => {
             showConfirm('データ移行', 'data.jsonの内容でFirestoreを上書き・追加しますか？', async () => {
                 try {
-                    const jsonData = await fetchNomineesData(); // api.jsから取得
+                    const jsonData = await fetchNomineesFromJSON(); // api.jsから取得
                     await migrateDataToFirestore(jsonData);
                     showAlert('移行が完了しました。');
                     loadNomineesList(); // リスト更新
@@ -155,8 +157,16 @@ function setupCmsListeners() {
         };
     }
 
+    // 部門選択変更時
+    const deptSelect = document.getElementById('cms-department-select');
+    if (deptSelect) {
+        deptSelect.onchange = () => {
+            loadNomineesList();
+        };
+    }
+
     // モーダル保存ボタン
-    const modalSaveBtn = document.getElementById('cms-edit-save');
+    const modalSaveBtn = document.getElementById('cms-edit-save-btn');
     if (modalSaveBtn) {
         modalSaveBtn.onclick = async () => {
             await saveNomineeFromModal();
@@ -164,10 +174,60 @@ function setupCmsListeners() {
     }
 
     // モーダルキャンセルボタン
-    const modalCancelBtn = document.getElementById('cms-edit-cancel');
+    const modalCancelBtn = document.getElementById('cms-edit-cancel-btn');
     if (modalCancelBtn) {
         modalCancelBtn.onclick = () => {
             document.getElementById('cms-edit-modal').classList.add('hidden');
+        };
+    }
+
+    // --- テーマ設定 ---
+
+    // カラーピッカーの変更検知
+    ['theme-main-color', 'theme-accent-color', 'theme-bg-color', 'theme-text-color'].forEach(id => {
+        const picker = document.getElementById(id);
+        if (picker) {
+            picker.oninput = (e) => {
+                document.getElementById(id + '-val').textContent = e.target.value;
+            };
+        }
+    });
+
+    // テーマ保存ボタン
+    const saveThemeBtn = document.getElementById('theme-save-btn');
+    if (saveThemeBtn) {
+        saveThemeBtn.onclick = async () => {
+            const layout = document.querySelector('input[name="theme-layout"]:checked').value;
+            const settings = {
+                mainColor: document.getElementById('theme-main-color').value,
+                accentColor: document.getElementById('theme-accent-color').value,
+                backgroundColor: document.getElementById('theme-bg-color').value,
+                textColor: document.getElementById('theme-text-color').value,
+                fontFamily: document.getElementById('theme-font-family').value,
+                backgroundImageUrl: document.getElementById('theme-bg-image').value,
+                layoutType: layout
+            };
+            try {
+                await saveThemeSettings(settings);
+                showAlert('テーマを保存しました。再読み込みすると反映されます。');
+            } catch (e) {
+                showAlert('保存エラー: ' + e.message);
+            }
+        };
+    }
+
+    // テーマリセットボタン
+    const resetThemeBtn = document.getElementById('theme-reset-btn');
+    if (resetThemeBtn) {
+        resetThemeBtn.onclick = () => {
+            // デフォルト値に戻す
+            updateColorPicker('theme-main-color', '#76499F');
+            updateColorPicker('theme-accent-color', '#E7CBFF');
+            updateColorPicker('theme-bg-color', '#ffffff');
+            updateColorPicker('theme-text-color', '#333333');
+            document.getElementById('theme-font-family').value = '';
+            document.getElementById('theme-bg-image').value = '';
+            document.querySelector('input[name="theme-layout"][value="list"]').checked = true;
         };
     }
 }
@@ -185,6 +245,9 @@ async function loadCmsData() {
 
     // 企画リスト読み込み
     await loadNomineesList();
+
+    // テーマ設定読み込み
+    await loadThemeSettings();
 }
 
 /**
@@ -192,35 +255,37 @@ async function loadCmsData() {
  */
 async function loadNomineesList() {
     const listContainer = document.getElementById('cms-nominee-list');
-    listContainer.innerHTML = '読み込み中...';
+    const currentDept = document.getElementById('cms-department-select').value;
+    listContainer.innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
 
     try {
         const nomineesData = await fetchNomineesFromFirestore();
         let html = '';
 
-        // 部門ごとに表示
-        const departments = { mogiten: '模擬店', tenji: '展示', stage: 'ステージ', academic: 'アカデミック' };
+        // 選択された部門のみ表示
+        const items = nomineesData[currentDept] || [];
 
-        for (const [deptKey, deptName] of Object.entries(departments)) {
-            const items = nomineesData[deptKey] || [];
-            if (items.length > 0) {
-                html += `<div style="background:#eee; padding:5px; font-weight:bold;">${deptName}</div>`;
-                items.forEach(item => {
-                    html += `
-                        <div class="cms-list-item">
-                            <div>
-                                <strong>${item.plan_name}</strong><br>
-                                <small>${item.organization_name}</small>
-                            </div>
-                            <div class="cms-item-actions">
-                                <button onclick="window.editNominee('${item.id}', '${deptKey}')">編集</button>
-                                <button onclick="window.deleteNominee('${item.id}')" style="color:red;">削除</button>
-                            </div>
+        if (items.length === 0) {
+            html = '<div style="text-align:center; padding:20px; color:#666;">この部門にはまだ企画がありません。</div>';
+        } else {
+            items.forEach(item => {
+                const iconStyle = item.icon_url ? `background-image: url('${item.icon_url}')` : '';
+                html += `
+                    <div class="cms-list-item">
+                        <div class="cms-item-icon" style="${iconStyle}"></div>
+                        <div class="cms-item-info">
+                            <div class="cms-item-title">${item.plan_name}</div>
+                            <div class="cms-item-org">${item.organization_name}</div>
                         </div>
-                    `;
-                });
-            }
+                        <div class="cms-item-actions">
+                            <button class="cms-action-btn edit" onclick="window.editNominee('${item.id}', '${currentDept}')">編集</button>
+                            <button class="cms-action-btn delete" onclick="window.deleteNominee('${item.id}')">削除</button>
+                        </div>
+                    </div>
+                `;
+            });
         }
+
         listContainer.innerHTML = html;
 
         // グローバル関数として登録（HTMLのonclickから呼ぶため）
@@ -236,7 +301,7 @@ async function loadNomineesList() {
         };
 
     } catch (e) {
-        listContainer.innerHTML = 'エラー: ' + e.message;
+        listContainer.innerHTML = '<div style="color:red; padding:20px;">エラー: ' + e.message + '</div>';
     }
 }
 
@@ -291,5 +356,35 @@ async function saveNomineeFromModal() {
         loadNomineesList();
     } catch (e) {
         showAlert('保存エラー: ' + e.message);
+    }
+}
+
+/**
+ * テーマ設定を読み込んで表示
+ */
+async function loadThemeSettings() {
+    const settings = await fetchThemeSettings();
+    if (settings) {
+        if (settings.mainColor) updateColorPicker('theme-main-color', settings.mainColor);
+        if (settings.accentColor) updateColorPicker('theme-accent-color', settings.accentColor);
+        if (settings.backgroundColor) updateColorPicker('theme-bg-color', settings.backgroundColor);
+        if (settings.textColor) updateColorPicker('theme-text-color', settings.textColor);
+
+        if (settings.fontFamily) document.getElementById('theme-font-family').value = settings.fontFamily;
+        if (settings.backgroundImageUrl) document.getElementById('theme-bg-image').value = settings.backgroundImageUrl;
+
+        if (settings.layoutType) {
+            const radio = document.querySelector(`input[name="theme-layout"][value="${settings.layoutType}"]`);
+            if (radio) radio.checked = true;
+        }
+    }
+}
+
+function updateColorPicker(id, color) {
+    const picker = document.getElementById(id);
+    const valDisplay = document.getElementById(id + '-val');
+    if (picker && valDisplay) {
+        picker.value = color;
+        valDisplay.textContent = color;
     }
 }
